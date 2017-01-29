@@ -50,19 +50,18 @@ def mag_thresh(img, sobel_kernel=3, mag_thresh=(0, 255)):
 calculate direction of gradient given image and thresh
 '''
 def dir_thresh(img, sobel_kernel=3, thresh=(0, np.pi/2)):
-  red = img[:, :, 0]
+  # red = img[:, :, 0]
 
-  # gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+  gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
   
   # given the magnitude of threshold for the combined two, return
-  abs_x = np.absolute(cv2.Sobel(red, cv2.CV_64F, 1, 0, ksize=sobel_kernel))
-  abs_y = np.absolute(cv2.Sobel(red, cv2.CV_64F, 0, 1, ksize=sobel_kernel))
+  abs_x = np.absolute(cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel))
+  abs_y = np.absolute(cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel))
 
-  sobel_dir = np.arctan2(abs_x, abs_y)
-  scaled = (255*sobel_dir/np.max(sobel_dir))
+  sobel_dir = np.arctan2(abs_y, abs_x)
 
-  binary_output = np.zeros_like(scaled)
-  binary_output[(scaled >= thresh[0]) & (scaled <= thresh[1])] = 1
+  binary_output = np.zeros_like(sobel_dir)
+  binary_output[(sobel_dir >= thresh[0]) & (sobel_dir <= thresh[1])] = 1
   return binary_output
 
 '''
@@ -82,20 +81,21 @@ def hls_thresh(img, thresh=(0, 255)):
 combine the thresholding functions
 '''
 def combo_thresh():
-  x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=9, thresh=(40, 120))
+  x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=3, thresh=(6, 120))
   plt.imshow(x_thresholded, cmap='gray')
+  plt.title('xthresh')
   plt.show()
 
-  y_thresholded = abs_sobel_thresh(image, orient='y', sobel_kernel=9, thresh=(40, 120))
+  y_thresholded = abs_sobel_thresh(image, orient='y', sobel_kernel=3, thresh=(10, 100))
   plt.imshow(y_thresholded, cmap='gray')
+  plt.title('ythresh')
   plt.show()
 
-  mag_thresholded = mag_thresh(image, sobel_kernel=9, mag_thresh=(40, 160))
-  plt.imshow(mag_thresholded, cmap='gray')
-  plt.show()
-
-  dir_thresholded = dir_thresh(image, sobel_kernel=3, thresh=(0, np.pi/2))  
-  plt.imshow(dir_thresholded, cmap='gray')  
+  binary_output = np.zeros_like(x_thresholded)
+  # using bitwise or + and, look up how working
+  binary_output[((x_thresholded == 1) & (y_thresholded == 1))] = 1
+  plt.imshow(binary_output, cmap='gray')
+  plt.title('x and y')
   plt.show()
 
   hls_thresholded = hls_thresh(image, thresh=(90, 255))
@@ -103,20 +103,70 @@ def combo_thresh():
   plt.title('hls')
   plt.show()
   
+
+  binary_output = np.zeros_like(x_thresholded)
+  # using bitwise or + and, look up how working
+  binary_output[((x_thresholded == 1) & (y_thresholded == 1)) & (hls_thresholded == 1)] = 1
+  plt.imshow(binary_output, cmap='gray')
+  plt.title('x and y, and hls')
+  plt.show()
+  # 
+
+  mag_thresholded = mag_thresh(image, sobel_kernel=3, mag_thresh=(20, 160))
+  plt.imshow(mag_thresholded, cmap='gray')
+  plt.title('magnitude')
+  plt.show()
+
+  dir_thresholded = dir_thresh(image, sobel_kernel=15, thresh=(.7, 1.2))  
+  plt.imshow(dir_thresholded, cmap='gray')  
+  plt.title('directional')
+  plt.show()
+
   binary_output = np.zeros_like(dir_thresholded)
   # using bitwise or + and, look up how working
-  binary_output[((x_thresholded == 1) & (y_thresholded == 1)) | ((mag_thresholded == 1) & (dir_thresholded == 1))] = 1
+  binary_output[((dir_thresholded == 1) & (mag_thresholded == 1))] = 1
+  plt.imshow(binary_output, cmap='gray')
+  plt.title('dir and mag')
+  plt.show()
+
+
+  binary_output = np.zeros_like(dir_thresholded)
+  # using bitwise or + and, look up how working
+  binary_output[((x_thresholded == 1) & (y_thresholded == 1)) | ((dir_thresholded == 1) & (mag_thresholded == 1) & (hls_thresholded == 1))] = 1
+  # 
   return binary_output
 
 
 if __name__ == '__main__':
   image = mpimg.imread('output_images/test5_undistorted.jpg')
   plt.imshow(image)
-  plt.show()
-
-  x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=9, thresh=(0, 120))
-  plt.imshow(x_thresholded, cmap='gray')
-  plt.show()
-  # combo = combo_thresh()
-  # plt.imshow(combo, cmap='gray')
   # plt.show()
+
+  # x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=3, thresh=(6, 120))
+  # plt.imshow(x_thresholded, cmap='gray')
+  # plt.show()
+
+  # y_thresholded = abs_sobel_thresh(image, orient='y', sobel_kernel=3, thresh=(10, 100))
+  # plt.imshow(y_thresholded, cmap='gray')
+  # plt.title('ythresh')
+  # plt.show()
+
+  # hls_thresholded = hls_thresh(image, thresh=(90, 255))
+  # plt.imshow(hls_thresholded, cmap='gray')
+  # plt.title('hls')
+  # plt.show()
+
+  # mag_thresholded = mag_thresh(image, sobel_kernel=3, mag_thresh=(20, 160))
+  # plt.imshow(mag_thresholded, cmap='gray')
+  # plt.title('magnitude')
+  # plt.show()
+
+  # dir_thresholded = dir_thresh(image, sobel_kernel=15, thresh=(.7, 1.2))  
+  # plt.imshow(dir_thresholded, cmap='gray')  
+  # plt.title('directional')
+  # plt.show()
+
+  combo = combo_thresh()
+  plt.imshow(combo, cmap='gray')
+  plt.title('combo')
+  plt.show()
