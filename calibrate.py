@@ -94,8 +94,11 @@ def undist(objpoints, imgpoints):
    # shape = img.shape
    # warped = cv2.warpPerspective(img, M, (shape[1], shape[0]))
 
+
+
+
 if __name__ == '__main__':
-  objpoints, imgpoints = calibrate_cam()
-  print('calibration complete')
-  undist(objpoints, imgpoints)
-  print('undistort complete')
+  # objpoints, imgpoints = calibrate_cam()
+  # print('calibration complete')
+  # undist(objpoints, imgpoints)
+  # print('undistort complete')
