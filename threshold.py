@@ -169,55 +169,66 @@ def changePerspective(img):
 get the left and right images
 '''
 def get_lr(warped_image):
-  # divide vertically by 8 (720/8 is 90)
-  height = int(warped_image.shape[0]/2)
-  width = (200, 400)
-  histogram = np.sum(warped_image[height:, width[0]:width[1]], axis=0)
+  #to start, divide by 2 and get peak
+  #eventually divide vertically by 8 (720/8 is 90)
+  half_height = int(warped_image.shape[0]/2)
+  left_range = (200, 400)
+  right_range = (900, 1100)
+
+  full_hist = np.sum(warped_image[half_height:, :], axis=0)
+  left_histogram = np.sum(warped_image[half_height:, left_range[0]: left_range[1]], axis=0)
+  right_histogram = np.sum(warped_image[half_height:, right_range[0]: right_range[1]], axis=0)
+  print('left hist', left_histogram.shape)
+  print('right hist', right_histogram.shape)
+
   # find peak between 200/ and 500/ 
   # use a 50 pixel wide map
-  max_hist = np.argmax(histogram)
-  print('max hist', max_hist)
+  left_max = np.argmax(left_histogram)
+  right_max = np.argmax(right_histogram)
+  print('right max hist', right_max)
 
   # add to array
   # current sending values 0, 0 -- 150, 360, 0, 720
-  left_width = width[0] + max_hist - 70
-  right_width = width[0] + max_hist + 70
-  print('warped image', warped_image.shape)
-  left_vals = warped_image[height:, left_width: right_width]
-  print('left vals inside getlr', left_vals[:, 30:40])
+  left_start = left_range[0] + left_max - 70
+  left_end = left_range[0] + left_max + 70
+  # print('warped image', warped_image.shape)
+  right_start = right_range[0] + right_max - 70
+  right_end = right_range[0] + right_max + 70
 
-  '''
-  i have pixels 1 values on two separate lines-- I want to send 
-  only the one-values as points (with their x and y val) to 
-  my calculating function
-  --try numpy.where value == 1 (save as coordinates)
-  --google how to do that
-  --make custom for loop-- if value is one, save point to separate array
-  '''
+  left_vals = warped_image[half_height:, left_start: left_end]
+  right_vals = warped_image[half_height:, right_start: right_end]
+
+  # -fit line to those pixels
+  left_xy = get_points(left_vals, left_start)
+  right_xy = get_points(right_vals, right_start)
+  # print('leftxy', left_xy.shape)
+  # print('rightxy', right_xy.shape)
+
+  plt.plot(full_hist)
+  plt.title('right vals')
+  plt.show()
+  return left_xy, right_xy
+
+def get_points(vals, width_offset):
   result = np.array([[0, 0]])
-  for ridx, row in enumerate(left_vals):
+
+  for ridx, row in enumerate(vals):
     # print('row')
     for cidx, val in enumerate(row):
       if val == 1:
-        print('found a 1', 360 + ridx, left_width + cidx)
-        result = np.append(result, [[360 + ridx, left_width + cidx]], axis=0)
-  print('result shape', result.shape)
+        # print('found a 1', 360 + ridx, width_offset + cidx)
+        result = np.append(result, [[360 + ridx, width_offset + cidx]], axis=0)
 
-  # -fit line to those pixels
-  
-  plt.plot(result)
-  plt.title('only 1s')
-  plt.show()
-  # print('hello world')
+  result = np.delete(result, 0, axis=0)
   return result
 
 '''
 calculate the curve of the lines based on the pixels
 '''
-def calc_curve(left_vals):
+def calc_curve(left_vals, right_vals):
   #replace the y and x data with my data and this code should work...
   #make fake y-range data
-  yvals = np.linspace(0, 100, num=100)*7.2
+  # yvals = np.linspace(0, 100, num=100)*7.2
   # print('yvals len', yvals.shape[0])
   # print('leftx len', leftx.shape[0])
   #y-range as image... what does that mean?
@@ -226,28 +237,31 @@ def calc_curve(left_vals):
 
   # print('leftx', leftx)
   #gen right images
-  rightx = np.array([900 + (elem**2)*4e-4 + np.random.randint(-50, high=51) for idx, elem in enumerate(yvals)])
+  # rightx = np.array([900 + (elem**2)*4e-4 + np.random.randint(-50, high=51) for idx, elem in enumerate(yvals)])
 
   # rightx = leftx
-  rightx = rightx[::-1]
+  # rightx = rightx[::-1]
   # leftx = leftx[::-1]
   # print('rightx', rightx)
   left_yvals = np.array([elem[0] for idx, elem in enumerate(left_vals)])
   leftx = np.array([elem[1] for idx, elem in enumerate(left_vals)])
-  print('left yvals.shape', left_yvals.shape)
-  print('leftx.shape', leftx.shape)
+  # print('left yvals.shape', left_yvals.shape)
+  # print('leftx.shape', leftx.shape)
+  right_yvals = np.array([elem[0] for idx, elem in enumerate(right_vals)])
+  rightx = np.array([elem[1] for idx, elem in enumerate(right_vals)])
   #fit to second order polynomial
   left_fit = np.polyfit(left_yvals, leftx, 2)
   left_fitx = left_fit[0]*left_yvals**2 + left_fit[1]*left_yvals + left_fit[2]
-  right_fit = np.polyfit(yvals, rightx, 2)
-  right_fitx = right_fit[0]*yvals**2 + right_fit[1]*yvals + right_fit[2]
+  
+  right_fit = np.polyfit(right_yvals, rightx, 2)
+  right_fitx = right_fit[0]*right_yvals**2 + right_fit[1]*right_yvals + right_fit[2]
 
   plt.plot(leftx, left_yvals, 'o', color='red')
-  plt.plot(rightx, yvals, 'o', color='blue')
+  plt.plot(rightx, right_yvals, 'o', color='blue')
   plt.xlim(0, 1280)
   plt.ylim(0, 720)
   plt.plot(left_fitx, left_yvals, color='green', linewidth=3)
-  plt.plot(right_fitx, yvals, color='green', linewidth=3)
+  plt.plot(right_fitx, right_yvals, color='green', linewidth=3)
   plt.gca().invert_yaxis()
   plt.show()
 
@@ -269,8 +283,8 @@ if __name__ == '__main__':
   plt.show()
   # print('warped shape', warped_image.shape)
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
-  left_vals = get_lr(warped_image)
-  calc_curve(left_vals)
+  left_vals, right_vals = get_lr(warped_image)
+  calc_curve(left_vals, right_vals)
 
   # x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=3, thresh=(10, 120))
   # plt.imshow(x_thresholded, cmap='gray')
