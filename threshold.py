@@ -168,69 +168,110 @@ def changePerspective(img):
 '''
 get the left and right images
 '''
-def get_lr():
-  # -divide vertically by 8 (720/8 is 90)
-  # -find peak between 200/ and 500/ 
-  # -use a 50 pixel wide map
-  # -add to array
+def get_lr(warped_image):
+  # divide vertically by 8 (720/8 is 90)
+  height = int(warped_image.shape[0]/2)
+  width = (200, 400)
+  histogram = np.sum(warped_image[height:, width[0]:width[1]], axis=0)
+  # find peak between 200/ and 500/ 
+  # use a 50 pixel wide map
+  max_hist = np.argmax(histogram)
+  print('max hist', max_hist)
+
+  # add to array
+  # current sending values 0, 0 -- 150, 360, 0, 720
+  left_width = width[0] + max_hist - 70
+  right_width = width[0] + max_hist + 70
+  print('warped image', warped_image.shape)
+  left_vals = warped_image[height:, left_width: right_width]
+  print('left vals inside getlr', left_vals[:, 30:40])
+
+  '''
+  i have pixels 1 values on two separate lines-- I want to send 
+  only the one-values as points (with their x and y val) to 
+  my calculating function
+  --try numpy.where value == 1 (save as coordinates)
+  --google how to do that
+  --make custom for loop-- if value is one, save point to separate array
+  '''
+  result = np.array([[0, 0]])
+  for ridx, row in enumerate(left_vals):
+    # print('row')
+    for cidx, val in enumerate(row):
+      if val == 1:
+        print('found a 1', 360 + ridx, left_width + cidx)
+        result = np.append(result, [[360 + ridx, left_width + cidx]], axis=0)
+  print('result shape', result.shape)
+
   # -fit line to those pixels
-  print('hello world')
+  
+  plt.plot(result)
+  plt.title('only 1s')
+  plt.show()
+  # print('hello world')
+  return result
 
 '''
 calculate the curve of the lines based on the pixels
 '''
-def calc_curve():
+def calc_curve(left_vals):
   #replace the y and x data with my data and this code should work...
   #make fake y-range data
-  yvals = np.linspace(0, 100, num=101)*7.2
+  yvals = np.linspace(0, 100, num=100)*7.2
+  # print('yvals len', yvals.shape[0])
+  # print('leftx len', leftx.shape[0])
   #y-range as image... what does that mean?
-  leftx = np.array([200 + (elem**2)*4e-4 + np.random.randint(-50, high=51) for idx, elem in enumerate(yvals)])
+  # leftx = np.array([200 + (elem**2)*4e-4 + np.random.randint(-50, high=51) for idx, elem in enumerate(yvals)])
   #reverse to match top-to-bottom in y (because np images reversed?)
-  leftx = leftx[::-1]
+
+  # print('leftx', leftx)
   #gen right images
   rightx = np.array([900 + (elem**2)*4e-4 + np.random.randint(-50, high=51) for idx, elem in enumerate(yvals)])
 
+  # rightx = leftx
   rightx = rightx[::-1]
-
+  # leftx = leftx[::-1]
+  # print('rightx', rightx)
+  left_yvals = np.array([elem[0] for idx, elem in enumerate(left_vals)])
+  leftx = np.array([elem[1] for idx, elem in enumerate(left_vals)])
+  print('left yvals.shape', left_yvals.shape)
+  print('leftx.shape', leftx.shape)
   #fit to second order polynomial
-  left_fit = np.polyfit(yvals, leftx, 2)
-  left_fitx = left_fit[0]*yvals**2 + left_fit[1]*yvals + left_fit[2]
+  left_fit = np.polyfit(left_yvals, leftx, 2)
+  left_fitx = left_fit[0]*left_yvals**2 + left_fit[1]*left_yvals + left_fit[2]
   right_fit = np.polyfit(yvals, rightx, 2)
   right_fitx = right_fit[0]*yvals**2 + right_fit[1]*yvals + right_fit[2]
 
-  plt.plot(leftx, yvals, 'o', color='red')
+  plt.plot(leftx, left_yvals, 'o', color='red')
   plt.plot(rightx, yvals, 'o', color='blue')
   plt.xlim(0, 1280)
   plt.ylim(0, 720)
-  plt.plot(left_fitx, yvals, color='green', linewidth=3)
+  plt.plot(left_fitx, left_yvals, color='green', linewidth=3)
   plt.plot(right_fitx, yvals, color='green', linewidth=3)
   plt.gca().invert_yaxis()
   plt.show()
 
 if __name__ == '__main__':
-  calc_curve()
   # image = mpimg.imread('straight_road_1x.jpg')
-  # image = mpimg.imread('output_images/test5_undistorted.jpg')
+  image = mpimg.imread('output_images/test5_undistorted.jpg')
   # plt.imshow(image)
   # plt.title('starter')
   # plt.show()
 
-  # combo_image = combo_thresh()
+  combo_image = combo_thresh()
   # plt.imshow(combo_image, cmap='gray')
   # plt.title('combo_image')
   # plt.show()
 
-  # warped_image = changePerspective(combo_image)
-  # plt.imshow(warped_image, cmap='gray')
-  # plt.title('warped_image')
-  # plt.show()
+  warped_image = changePerspective(combo_image)
+  plt.imshow(warped_image, cmap='gray')
+  plt.title('warped_image')
+  plt.show()
   # print('warped shape', warped_image.shape)
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
+  left_vals = get_lr(warped_image)
+  calc_curve(left_vals)
 
-  # histogram = np.sum(warped_image[int(warped_image.shape[0]/8):, :], axis=0)
-  # plt.plot(histogram)
-  # plt.title('histogram')
-  # plt.show()
   # x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=3, thresh=(10, 120))
   # plt.imshow(x_thresholded, cmap='gray')
   # plt.title('xthresh')
