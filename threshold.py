@@ -1,3 +1,4 @@
+# import cv
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -84,24 +85,24 @@ def combo_thresh():
   x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=3, thresh=(6, 120))
   plt.imshow(x_thresholded, cmap='gray')
   plt.title('xthresh')
-  plt.show()
+  # plt.show()
 
   y_thresholded = abs_sobel_thresh(image, orient='y', sobel_kernel=3, thresh=(10, 100))
   plt.imshow(y_thresholded, cmap='gray')
   plt.title('ythresh')
-  plt.show()
+  # plt.show()
 
   binary_output = np.zeros_like(x_thresholded)
   # using bitwise or + and, look up how working
   binary_output[((x_thresholded == 1) & (y_thresholded == 1))] = 1
   plt.imshow(binary_output, cmap='gray')
   plt.title('x and y')
-  plt.show()
+  # plt.show()
 
   hls_thresholded = hls_thresh(image, thresh=(90, 255))
   plt.imshow(hls_thresholded, cmap='gray')
   plt.title('hls')
-  plt.show()
+  # plt.show()
   
 
   binary_output = np.zeros_like(x_thresholded)
@@ -109,25 +110,25 @@ def combo_thresh():
   binary_output[((x_thresholded == 1) & (y_thresholded == 1)) & (hls_thresholded == 1)] = 1
   plt.imshow(binary_output, cmap='gray')
   plt.title('x and y, and hls')
-  plt.show()
+  # plt.show()
   # 
 
   mag_thresholded = mag_thresh(image, sobel_kernel=3, mag_thresh=(20, 160))
   plt.imshow(mag_thresholded, cmap='gray')
   plt.title('magnitude')
-  plt.show()
+  # plt.show()
 
   dir_thresholded = dir_thresh(image, sobel_kernel=15, thresh=(.7, 1.2))  
   plt.imshow(dir_thresholded, cmap='gray')  
   plt.title('directional')
-  plt.show()
+  # plt.show()
 
   binary_output = np.zeros_like(dir_thresholded)
   # using bitwise or + and, look up how working
   binary_output[((dir_thresholded == 1) & (mag_thresholded == 1))] = 1
   plt.imshow(binary_output, cmap='gray')
   plt.title('dir and mag')
-  plt.show()
+  # plt.show()
 
 
   binary_output = np.zeros_like(dir_thresholded)
@@ -137,10 +138,48 @@ def combo_thresh():
   return binary_output
 
 
-if __name__ == '__main__':
-  image = mpimg.imread('output_images/test5_undistorted.jpg')
-  plt.imshow(image)
+'''
+warp the perspective based on 4 points
+'''
+def changePerspective(img):
+  img_size = (image.shape[1], image.shape[0])
+  # print('image shape is', img_size)
+  # [0] is 720, [1] is 128-
+  src = np.float32(
+    [[(img_size[0] / 2) - 40, img_size[1] / 2 + 90],
+    [((img_size[0] / 6) + 40), img_size[1]],
+    [(img_size[0] * 5 / 6) + 115, img_size[1]],
+    [(img_size[0] / 2 + 42), img_size[1] / 2 + 90]])
+  # print('src is', src)
+
+  dst = np.float32(
+    [[(img_size[0] / 4), 0],
+    [(img_size[0] / 4), img_size[1]],
+    [(img_size[0] * 3 / 4), img_size[1]],
+    [(img_size[0] * 3 / 4), 0]])
+  # print('dst is', dst)
+
+  # cv2.fillConvexPoly(image, src, 1)
+  # plt.imshow(image)
+  # plt.title('lines')
   # plt.show()
+  M = cv2.getPerspectiveTransform(src, dst)
+  shape = img.shape
+  warped = cv2.warpPerspective(img, M, (shape[1], shape[0]))
+  return warped
+
+
+if __name__ == '__main__':
+  # image = mpimg.imread('straight_road_1x.jpg')
+  image = mpimg.imread('output_images/test1_undistorted.jpg')
+  plt.imshow(image)
+  plt.title('starter')
+  plt.show()
+
+  warped = changePerspective(image)
+  plt.imshow(warped)
+  plt.title('warped')
+  plt.show()
 
   # x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=3, thresh=(6, 120))
   # plt.imshow(x_thresholded, cmap='gray')
@@ -166,7 +205,7 @@ if __name__ == '__main__':
   # plt.title('directional')
   # plt.show()
 
-  combo = combo_thresh()
-  plt.imshow(combo, cmap='gray')
-  plt.title('combo')
-  plt.show()
+  # combo = combo_thresh()
+  # plt.imshow(combo, cmap='gray')
+  # plt.title('combo')
+  # plt.show()

@@ -87,13 +87,6 @@ def undist(objpoints, imgpoints):
   # ax2.imshow(dst)
   # ax2.set_title('Undistoredted Image', fontsize=30)
 
-# def changePerspective(img):
-   # src = np.float32([corner1, corner2, corner3, corner4])
-   # dst = np.float32('')
-   # M = cv2.getPerspectiveTransform(src, dst)
-   # shape = img.shape
-   # warped = cv2.warpPerspective(img, M, (shape[1], shape[0]))
-
 
 
 
