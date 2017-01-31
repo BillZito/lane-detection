@@ -1,11 +1,9 @@
-# import cv
 import cv2
 import numpy as np
 import scipy.misc as sci
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from moviepy.editor import VideoFileClip
-# from IPython.display import HTML
 
 '''
 calculate the threshold of x or y sobel given certain thesh and kernel sizes
@@ -13,7 +11,7 @@ calculate the threshold of x or y sobel given certain thesh and kernel sizes
 def abs_sobel_thresh(img, orient='x', sobel_kernel=3, thresh=(0, 255)):
   # grayscale image
   red = img[:, :, 0]
-  # gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
   # find abs sobel thresh
   if orient == 'x':
     sobel = cv2.Sobel(red, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
@@ -22,8 +20,6 @@ def abs_sobel_thresh(img, orient='x', sobel_kernel=3, thresh=(0, 255)):
   
   #get abs value
   abs_sobel = np.absolute(sobel)
-  # need to scale from 64 bit image to 8 bit... just needs to be uniform
-  # so shouldnt mess up image?
   scaled = np.uint8(255*abs_sobel/np.max(abs_sobel))
   
   grad_binary = np.zeros_like(scaled)
@@ -133,35 +129,38 @@ def combo_thresh(img):
 '''
 warp the perspective based on 4 points
 '''
-def changePerspective(img):
+def change_perspective(img):
   img_size = (img.shape[1], img.shape[0])
-  # print('image shape is', img_size)
-  # [0] is 720, [1] is 128-
+
+  # set fixed transforms based on image size
   src = np.float32(
     [[(img_size[0] / 2) - 40, img_size[1] / 2 + 90],
     [((img_size[0] / 6) + 40), img_size[1]],
     [(img_size[0] * 5 / 6) + 115, img_size[1]],
     [(img_size[0] / 2 + 42), img_size[1] / 2 + 90]])
-  # print('src is', src)
 
   dst = np.float32(
     [[(img_size[0] / 4), 0],
     [(img_size[0] / 4), img_size[1]],
     [(img_size[0] * 3 / 4), img_size[1]],
     [(img_size[0] * 3 / 4), 0]])
-  # print('dst is', dst)
 
-  # cv2.fillConvexPoly(image, src, 1)
+  # used to test that src points matched line
+  # cv2.fillConvexPoly(img, src, 1)
   # plt.imshow(img)
   # plt.title('lines')
   # plt.show()
+
+  # create a transformation matrix based on the src and destination points
   M = cv2.getPerspectiveTransform(src, dst)
-  shape = img.shape
-  warped = cv2.warpPerspective(img, M, (shape[1], shape[0]))
+
+  #transform the image to birds eye view given the transform matrix
+  warped = cv2.warpPerspective(img, M, (img_size[0], img_size[1]))
+  # sci.imsave('./output_images/warped_5.jpg', warped)
   return warped
 
 '''
-get the left and right images
+get the pixels for the left and right lanes and return them
 '''
 def get_lr(warped_image):
   #to start, divide by 2 and get peak
@@ -173,48 +172,53 @@ def get_lr(warped_image):
   full_hist = np.sum(warped_image[half_height:, :], axis=0)
   left_histogram = np.sum(warped_image[half_height:, left_range[0]: left_range[1]], axis=0)
   right_histogram = np.sum(warped_image[half_height:, right_range[0]: right_range[1]], axis=0)
-  # print('left hist', left_histogram.shape)
-  # print('right hist', right_histogram.shape)
 
-  # find peak between 200/ and 500/ 
-  # use a 50 pixel wide map
+  # find peak within the above ranges
   left_max = np.argmax(left_histogram)
   right_max = np.argmax(right_histogram)
   # print('right max hist', right_max)
 
-  # add to array
-  # current sending values 0, 0 -- 150, 360, 0, 720
+  # add pixels near left and right peaks into left/right arrays
   left_start = left_range[0] + left_max - 70
   left_end = left_range[0] + left_max + 70
-  # print('warped image', warped_image.shape)
+
   right_start = right_range[0] + right_max - 70
   right_end = right_range[0] + right_max + 70
 
   left_vals = warped_image[half_height:, left_start: left_end]
   right_vals = warped_image[half_height:, right_start: right_end]
 
-  # -fit line to those pixels
+  # fit line to those pixels using get_points()
   left_xy = get_points(left_vals, left_start)
   right_xy = get_points(right_vals, right_start)
-  # print('leftxy', left_xy.shape)
-  # print('rightxy', right_xy.shape)
 
+  #used for plotting the full histogram to see its distribution
   # plt.plot(full_hist)
   # plt.title('full hist')
   # plt.show()
 
   return left_xy, right_xy
 
+'''
+Given an array with the pixel values, convert to an array of where 
+those pixels were found on the x/y axis
+'''
 def get_points(vals, width_offset):
+  #initialize array
   result = np.array([[0, 0]])
 
+  #for each row
   for ridx, row in enumerate(vals):
-    # print('row')
+    #for each column
     for cidx, val in enumerate(row):
+      #if pixel found
       if val == 1:
-        # print('found a 1', 360 + ridx, width_offset + cidx)
+        # add x/y coordinates to results array
+        # 360 is 1/2 heigh (hardcoded right now but could be var)
+        #720 is bottom of image, and 1280 the far right
         result = np.append(result, [[360 + ridx, width_offset + cidx]], axis=0)
 
+  #delete first value
   result = np.delete(result, 0, axis=0)
   return result
 
@@ -222,29 +226,15 @@ def get_points(vals, width_offset):
 calculate the curve of the lines based on the pixels
 '''
 def calc_curve(left_vals, right_vals):
-  #replace the y and x data with my data and this code should work...
-  #make fake y-range data
-  # yvals = np.linspace(0, 100, num=100)*7.2
-  # print('yvals len', yvals.shape[0])
-  # print('leftx len', leftx.shape[0])
-  #y-range as image... what does that mean?
-  # leftx = np.array([200 + (elem**2)*4e-4 + np.random.randint(-50, high=51) for idx, elem in enumerate(yvals)])
-  #reverse to match top-to-bottom in y (because np images reversed?)
-
-  # print('leftx', leftx)
-  #gen right images
-  # rightx = np.array([900 + (elem**2)*4e-4 + np.random.randint(-50, high=51) for idx, elem in enumerate(yvals)])
-
-  # rightx = leftx
-  # rightx = rightx[::-1]
-  # leftx = leftx[::-1]
-  # print('rightx', rightx)
+  
+  # set left/righty to the first values, and left/rightx to the second
   left_yvals = np.array([elem[0] for idx, elem in enumerate(left_vals)])
   leftx = np.array([elem[1] for idx, elem in enumerate(left_vals)])
   # print('left yvals.shape', left_yvals.shape)
   # print('leftx.shape', leftx.shape)
   right_yvals = np.array([elem[0] for idx, elem in enumerate(right_vals)])
   rightx = np.array([elem[1] for idx, elem in enumerate(right_vals)])
+  
   #fit to second order polynomial
   left_fit = np.polyfit(left_yvals, leftx, 2)
   left_fitx = left_fit[0]*left_yvals**2 + left_fit[1]*left_yvals + left_fit[2]
@@ -252,15 +242,17 @@ def calc_curve(left_vals, right_vals):
   right_fit = np.polyfit(right_yvals, rightx, 2)
   right_fitx = right_fit[0]*right_yvals**2 + right_fit[1]*right_yvals + right_fit[2]
 
+  #plot left (red) and right (blue) lanes 
   plt.plot(leftx, left_yvals, 'o', color='red')
   plt.plot(rightx, right_yvals, 'o', color='blue')
   plt.xlim(0, 1280)
   plt.ylim(0, 720)
+
+  #and their polynomials with green best fit
   plt.plot(left_fitx, left_yvals, color='green', linewidth=3)
   plt.plot(right_fitx, right_yvals, color='green', linewidth=3)
   plt.gca().invert_yaxis()
   # plt.show()
-
 
   #convert from pixel space to meter space
   ym_per_pix = 30/720
@@ -278,31 +270,6 @@ def calc_curve(left_vals, right_vals):
   # print('rightcurverad', right_curverad)
   return left_fitx, left_yvals, right_fitx, right_yvals
 
-'''
-create a line class to keep track of important information about each line
-'''
-class Line():
-  def __init__(self):
-    #if line was deteced in last iteration
-    self.detected = False
-    # x values of last n fits
-    self.recent_xfitted = []
-    #average x values of the fitted line over the last n iterations
-    self.bestx = None
-    #polynomial coefficients averaged over the last n
-    self.best_fit = None
-    #polynomial coefficients of the most recent fit
-    self.current_fit = [np.array([False])]
-    #raidus of curvature of the line in some units
-    self.radius_of_curvature = None
-    #distance in meters of vehicle center from the line
-    self.line_base_pos = None
-    #difference in fit coefficients between last and new fits
-    self.diffs = np.array([0, 0, 0], dtype='float')
-    #xvalues for detected line pixels
-    self.allx = None
-    #yvals 
-    self.ally = None
 
 '''
 given left and right lines values, add to original image
@@ -352,21 +319,24 @@ def draw_on_road(img, warped, left_fitx, left_yvals, right_fitx, right_yvals):
   # print('result shape', result.shape)
   # plt.imshow(result)
   # plt.show()
-  # np.save('my_test.jpg', result)
   return result
-  # sci.imsave('mytest.jpg', result)
 
+'''
+Run all steps of processing on an image. 
+1. Create binary thresholds
+2. Change to birds-eye-view
+3. Calculate curvature of left/right lane
+4. map back onto road
+'''
 def process_image(img):
-  # plt.imshow(image)
-  # plt.title('starter')
-  # plt.show()
 
   combo_image = combo_thresh(img)
   # plt.imshow(combo_image, cmap='gray')
   # plt.title('combo_image')
   # plt.show()
+  # sci.imsave('./output_images/combo_threshold_1.jpg', combo_image)
 
-  warped_image = changePerspective(combo_image)
+  warped_image = change_perspective(combo_image)
   
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
   left_vals, right_vals = get_lr(warped_image)
@@ -374,51 +344,52 @@ def process_image(img):
   result = draw_on_road(img, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
   return result
 
+
+'''
+create a line class to keep track of important information about each line
+'''
+# class Line():
+#   def __init__(self):
+#     #if line was deteced in last iteration
+#     self.detected = False
+#     # x values of last n fits
+#     self.recent_xfitted = []
+#     #average x values of the fitted line over the last n iterations
+#     self.bestx = None
+#     #polynomial coefficients averaged over the last n
+#     self.best_fit = None
+#     #polynomial coefficients of the most recent fit
+#     self.current_fit = [np.array([False])]
+#     #raidus of curvature of the line in some units
+#     self.radius_of_curvature = None
+#     #distance in meters of vehicle center from the line
+#     self.line_base_pos = None
+#     #difference in fit coefficients between last and new fits
+#     self.diffs = np.array([0, 0, 0], dtype='float')
+#     #xvalues for detected line pixels
+#     self.allx = None
+#     #yvals 
+#     self.ally = None
+
+
 if __name__ == '__main__':
-  # image = mpimg.imread('output_images/test2_undistorted.jpg')
 
   #set video variables
-  proj_output = 'output2.mp4'
-  clip1 = VideoFileClip('project_video.mp4')
+  # proj_output = 'output5.mp4'
+  # clip1 = VideoFileClip('project_video.mp4')
 
-  #run process image on each video clip and save to file
-  output_clip = clip1.fl_image(process_image)
-  output_clip.write_videofile(proj_output, audio=False)
-
+  # #run process image on each video clip and save to file
+  # output_clip = clip1.fl_image(process_image)
+  # output_clip.write_videofile(proj_output, audio=False)
 
 
   # left = Line()
   # right = Line()
   # image = mpimg.imread('straight_road_1x.jpg')
-  # colored_image = process_image(image)
+  image = mpimg.imread('output_images/test5_undistorted.jpg')
+  colored_image = process_image(image)
 
   # plt.imshow(colored_image)
   # plt.title('colored_image')
   # plt.show()
 
-
-  # x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=3, thresh=(10, 120))
-  # plt.imshow(x_thresholded, cmap='gray')
-  # plt.title('xthresh')
-  # plt.show()
-
-
-  # y_thresholded = abs_sobel_thresh(image, orient='y', sobel_kernel=3, thresh=(15, 100))
-  # plt.imshow(y_thresholded, cmap='gray')
-  # plt.title('ythresh')
-  # plt.show()
-
-  # hls_thresholded = hls_thresh(image, thresh=(90, 255))
-  # plt.imshow(hls_thresholded, cmap='gray')
-  # plt.title('hls')
-  # plt.show()
-
-  # mag_thresholded = mag_thresh(image, sobel_kernel=3, mag_thresh=(20, 100))
-  # plt.imshow(mag_thresholded, cmap='gray')
-  # plt.title('magnitude')
-  # plt.show()
-
-  # dir_thresholded = dir_thresh(image, sobel_kernel=15, thresh=(.7, 1.2))  
-  # plt.imshow(dir_thresholded, cmap='gray')  
-  # plt.title('directional')
-  # plt.show()
