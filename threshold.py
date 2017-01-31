@@ -178,14 +178,14 @@ def get_lr(warped_image):
   full_hist = np.sum(warped_image[half_height:, :], axis=0)
   left_histogram = np.sum(warped_image[half_height:, left_range[0]: left_range[1]], axis=0)
   right_histogram = np.sum(warped_image[half_height:, right_range[0]: right_range[1]], axis=0)
-  print('left hist', left_histogram.shape)
-  print('right hist', right_histogram.shape)
+  # print('left hist', left_histogram.shape)
+  # print('right hist', right_histogram.shape)
 
   # find peak between 200/ and 500/ 
   # use a 50 pixel wide map
   left_max = np.argmax(left_histogram)
   right_max = np.argmax(right_histogram)
-  print('right max hist', right_max)
+  # print('right max hist', right_max)
 
   # add to array
   # current sending values 0, 0 -- 150, 360, 0, 720
@@ -265,12 +265,100 @@ def calc_curve(left_vals, right_vals):
   plt.gca().invert_yaxis()
   plt.show()
 
-if __name__ == '__main__':
-  # image = mpimg.imread('straight_road_1x.jpg')
-  image = mpimg.imread('output_images/test5_undistorted.jpg')
+
+  #convert from pixel space to meter space
+  ym_per_pix = 30/720
+  xm_per_pix = 3.7/700
+
+  left_fit_cr = np.polyfit(left_yvals*ym_per_pix, leftx*xm_per_pix, 2)
+  right_fit_cr = np.polyfit(right_yvals*ym_per_pix, rightx*xm_per_pix, 2)
+
+  #calculate radisu of curvature
+  left_eval = np.max(left_yvals)
+  right_eval = np.max(right_yvals)
+  left_curverad = ((1 + (2*left_fit_cr[0]*left_eval + left_fit_cr[1])**2)**1.5)/np.absolute(2*left_fit_cr[0])
+  right_curverad = ((1 + (2*right_fit_cr[0]*right_eval + right_fit_cr[1])**2)**1.5)/np.absolute(2*right_fit_cr[0])
+  print('left curverad', left_curverad)
+  print('rightcurverad', right_curverad)
+  return left_fitx, left_yvals, right_fitx, right_yvals
+
+class Line():
+  def __init__(self):
+    #if line was deteced in last iteration
+    self.detected = False
+    # x values of last n fits
+    self.recent_xfitted = []
+    #average x values of the fitted line over the last n iterations
+    self.bestx = None
+    #polynomial coefficients averaged over the last n
+    self.best_fit = None
+    #polynomial coefficients of the most recent fit
+    self.current_fit = [np.array([False])]
+    #raidus of curvature of the line in some units
+    self.radius_of_curvature = None
+    #distance in meters of vehicle center from the line
+    self.line_base_pos = None
+    #difference in fit coefficients between last and new fits
+    self.diffs = np.array([0, 0, 0], dtype='float')
+    #xvalues for detected line pixels
+    self.allx = None
+    #yvals 
+    self.ally = None
+
+def draw_on_road(image, warped, left_fitx, left_yvals, right_fitx, right_yvals):
+  #create image to draw the lines on
+  warp_zero = np.zeros_like(warped).astype(np.uint8)
+  color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
+
+  #recast x and y into usable format for cv2.fillPoly
+  pts_left = np.array([np.transpose(np.vstack([left_fitx, left_yvals]))])
+  pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, right_yvals])))])
+  print('pts left', pts_left.shape, 'pts right', pts_right.shape)
+  pts = np.hstack((pts_left, pts_right))
+
+  #draw the lane onto the warped blank image
+  cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
+
+  img_size = (image.shape[1], image.shape[0])
+
+  dst = np.float32(
+    [[(img_size[0] / 2) - 40, img_size[1] / 2 + 90],
+    [((img_size[0] / 6) + 40), img_size[1]],
+    [(img_size[0] * 5 / 6) + 115, img_size[1]],
+    [(img_size[0] / 2 + 42), img_size[1] / 2 + 90]])
+  # print('src is', src)
+
+  src = np.float32(
+    [[(img_size[0] / 4), 0],
+    [(img_size[0] / 4), img_size[1]],
+    [(img_size[0] * 3 / 4), img_size[1]],
+    [(img_size[0] * 3 / 4), 0]])
+  # print('dst is', dst)
+
+  # cv2.fillConvexPoly(image, src, 1)
   # plt.imshow(image)
-  # plt.title('starter')
+  # plt.title('lines')
   # plt.show()
+  Minv = cv2.getPerspectiveTransform(src, dst)
+
+
+  #warp the blank back oto the original image using inverse perspective matrix
+  newwarp = cv2.warpPerspective(color_warp, Minv, (image.shape[1], image.shape[0]))
+
+  #combine the result with the original 
+  result = cv2.addWeighted(image, 1, newwarp, 0.3, 0)
+  print('result shape', result.shape)
+  plt.imshow(result)
+  plt.show()
+
+if __name__ == '__main__':
+  left = Line()
+  right = Line()
+  # image = mpimg.imread('straight_road_1x.jpg')
+  image = mpimg.imread('output_images/test6_undistorted.jpg')
+  plt.imshow(image)
+  plt.title('starter')
+  plt.show()
 
   combo_image = combo_thresh()
   # plt.imshow(combo_image, cmap='gray')
@@ -284,7 +372,8 @@ if __name__ == '__main__':
   # print('warped shape', warped_image.shape)
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
   left_vals, right_vals = get_lr(warped_image)
-  calc_curve(left_vals, right_vals)
+  left_fitx, left_yvals, right_fitx, right_yvals = calc_curve(left_vals, right_vals)
+  draw_on_road(image, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
 
   # x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=3, thresh=(10, 120))
   # plt.imshow(x_thresholded, cmap='gray')
