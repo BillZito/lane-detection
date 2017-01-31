@@ -39,7 +39,7 @@ And after undistortion (notice how the edge of the top right bush changed):
 
 ###3. Apply binary thresholds to identify lane lines
 
-threshold.py contains the fucntions for applying binary thresholds detect the lane lines.
+threshold_helpers.py contains the fucntions for applying binary thresholds detect the lane lines.
 
 1. abs_sobel_thresh(): calculates the threshold along either x (mostly vertical) or y (mostly horizontal) orients, given passed in thersholds (upper and lower bounds) and kernel values (which determines smoothness). The red color spectrum was found to give the best thresholds via guess and test.
 1. mag_thresh(): creates a magnitude threshold baed on the combined values of the sobel in x and y directions.
@@ -56,6 +56,8 @@ After all thresholds are applied:
 
 ###4. Transform perspective to birds-eye-view
 
+draw_lane.py contains the code for transforming perspective. 
+
 change_perspective(): takes a road image and maps it to the birds eye view. A transformation matrix, M, is calculated between the src points (4 corners of a straight lane) and the destination points (a rectangle/birds eye view of the lane). cv2.warpPerspective then maps the previous image to the birds eye view.
 
 The src points are based proportionally on the size of the image, and were determined by picking 4 points on an image of the straight lane. 
@@ -68,6 +70,8 @@ After changing perspective, the left and right lines should appear parallel sinc
 
 ###5. Detect left/right lane pixels and determine curvature
 
+draw_lane.py contains the code for deteching l/r lane pixels.
+
 *get_lr(): takes the warped and thresholded image and extracts the locations of the pixels in it. Given a range for the left and right lanes, the peak values across rows are found, corresponding to where there is likely a lane. 
 
 A range around this value is then extracted as being likely to correspond to the lane. 
@@ -79,8 +83,12 @@ A range around this value is then extracted as being likely to correspond to the
 
 *(w/in calc curve): converts from pixel space to meter space and calculates the left and right curve radius.
 
+![alt tag](./output_images/best_fit_lines.png)
 
-##6. Warp detected lane back onto the original image
+
+###6. Warp detected lane back onto the original image
+
+draw_lane.py puts everything together. 
 
 *draw_on_road(): Given the calculated lines of best fit, the x and y values are converted to points and filled in green. 
 
@@ -91,14 +99,22 @@ The inverse perspective transform of the original birds eye transform is used to
 ![alt tag](./output_images/drawn_lane_lines.jpg)
 
 
+## Key Learnings
+
+1. To determine the right thresholding, I experimented with gray color images and the red color channel since it can recognize both white and yellow lines. Messing with the parameters, I determined that the red color channel worked best, and that combing the hls_threshold with the dir and mag took out the shadow noise in the hls_threshold function.
+
+
+1. To determine the best spots for the conversion from image space to pixel space, I played around with different hard-coded corners for the lanes. This took  some fine-tuning, but after I got parallel lines in my perspective transform, warping the lane back worked well. From there, I only had to average the right lane occassionally to get it to work well. 
+
+
+1. After developing my convolutional neural network for maintaining lanes, I knew to visualize my images at each step of the process to avoid stupid mistakes. Given the large number of helper methods for this problem, I also had to make decisions about how to best modularize the code. I decided that the camera calibration functions could stand on their own, as could all of the thresholding functions, allowing the main draw_lane.py to call the necessary helpers in process_image.
+
+
+
 ## Acknowledgements 
 Thank you to Udacity for selecting me for the nanodegree and helping me meet other self-driving car programmers.
 
 
 ## Todo
-1. apply undistortion to images (10)
-1. break out thresholding from other functions (10)
-1. get a picture of the best fit lines for the lane pixels (0)
 1. write the curvature and distance from center at top of each image (30)
 1. average lane lines across time to reduce error (1)
-1. discuss challenges faced -- finding right thresholding, getting the right lane to work correctly, passing img variable name between functions, (30)
