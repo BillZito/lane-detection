@@ -1,8 +1,11 @@
 # import cv
 import cv2
 import numpy as np
+import scipy.misc as sci
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+from moviepy.editor import VideoFileClip
+# from IPython.display import HTML
 
 '''
 calculate the threshold of x or y sobel given certain thesh and kernel sizes
@@ -206,7 +209,7 @@ def get_lr(warped_image):
 
   plt.plot(full_hist)
   plt.title('right vals')
-  plt.show()
+  # plt.show()
   return left_xy, right_xy
 
 def get_points(vals, width_offset):
@@ -263,7 +266,7 @@ def calc_curve(left_vals, right_vals):
   plt.plot(left_fitx, left_yvals, color='green', linewidth=3)
   plt.plot(right_fitx, right_yvals, color='green', linewidth=3)
   plt.gca().invert_yaxis()
-  plt.show()
+  # plt.show()
 
 
   #convert from pixel space to meter space
@@ -278,10 +281,13 @@ def calc_curve(left_vals, right_vals):
   right_eval = np.max(right_yvals)
   left_curverad = ((1 + (2*left_fit_cr[0]*left_eval + left_fit_cr[1])**2)**1.5)/np.absolute(2*left_fit_cr[0])
   right_curverad = ((1 + (2*right_fit_cr[0]*right_eval + right_fit_cr[1])**2)**1.5)/np.absolute(2*right_fit_cr[0])
-  print('left curverad', left_curverad)
-  print('rightcurverad', right_curverad)
+  # print('left curverad', left_curverad)
+  # print('rightcurverad', right_curverad)
   return left_fitx, left_yvals, right_fitx, right_yvals
 
+'''
+create a line class to keep track of important information about each line
+'''
 class Line():
   def __init__(self):
     #if line was deteced in last iteration
@@ -305,6 +311,9 @@ class Line():
     #yvals 
     self.ally = None
 
+'''
+given left and right lines values, add to original image
+'''
 def draw_on_road(image, warped, left_fitx, left_yvals, right_fitx, right_yvals):
   #create image to draw the lines on
   warp_zero = np.zeros_like(warped).astype(np.uint8)
@@ -313,7 +322,7 @@ def draw_on_road(image, warped, left_fitx, left_yvals, right_fitx, right_yvals):
   #recast x and y into usable format for cv2.fillPoly
   pts_left = np.array([np.transpose(np.vstack([left_fitx, left_yvals]))])
   pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, right_yvals])))])
-  print('pts left', pts_left.shape, 'pts right', pts_right.shape)
+  # print('pts left', pts_left.shape, 'pts right', pts_right.shape)
   pts = np.hstack((pts_left, pts_right))
 
   #draw the lane onto the warped blank image
@@ -347,18 +356,17 @@ def draw_on_road(image, warped, left_fitx, left_yvals, right_fitx, right_yvals):
 
   #combine the result with the original 
   result = cv2.addWeighted(image, 1, newwarp, 0.3, 0)
-  print('result shape', result.shape)
-  plt.imshow(result)
-  plt.show()
+  # print('result shape', result.shape)
+  # plt.imshow(result)
+  # plt.show()
+  # np.save('my_test.jpg', result)
+  return result
+  # sci.imsave('mytest.jpg', result)
 
-if __name__ == '__main__':
-  left = Line()
-  right = Line()
-  # image = mpimg.imread('straight_road_1x.jpg')
-  image = mpimg.imread('output_images/test6_undistorted.jpg')
-  plt.imshow(image)
-  plt.title('starter')
-  plt.show()
+def process_image(image):
+  # plt.imshow(image)
+  # plt.title('starter')
+  # plt.show()
 
   combo_image = combo_thresh()
   # plt.imshow(combo_image, cmap='gray')
@@ -366,15 +374,32 @@ if __name__ == '__main__':
   # plt.show()
 
   warped_image = changePerspective(combo_image)
-  plt.imshow(warped_image, cmap='gray')
-  plt.title('warped_image')
-  plt.show()
+  # plt.imshow(warped_image, cmap='gray')
+  # plt.title('warped_image')
+  # plt.show()
   # print('warped shape', warped_image.shape)
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
   left_vals, right_vals = get_lr(warped_image)
   left_fitx, left_yvals, right_fitx, right_yvals = calc_curve(left_vals, right_vals)
-  draw_on_road(image, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
+  result = draw_on_road(image, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
+  return result
 
+if __name__ == '__main__':
+  # left = Line()
+  # right = Line()
+  # image = mpimg.imread('straight_road_1x.jpg')
+  image = mpimg.imread('output_images/test6_undistorted.jpg')
+  # process_image(image)
+
+  proj_output = 'challenge_output.mp4'
+
+  clip1 = VideoFileClip('challenge_video.mp4')
+
+  output_clip = clip1.fl_image(process_image)
+
+  print('saving file')
+  output_clip.write_videofile(proj_output, audio=False)
+  print('file saved')
   # x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=3, thresh=(10, 120))
   # plt.imshow(x_thresholded, cmap='gray')
   # plt.title('xthresh')
