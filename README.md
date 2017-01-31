@@ -96,6 +96,9 @@ Thank you to Udacity for selecting me for the nanodegree and helping me meet oth
 
 
 ## Todo
-1. get a picture of the best fit lines for the lane pixels
-1. write the curvature and distance from center at top of each image
-1. average lane lines across time to reduce error
+1. apply undistortion to images (10)
+1. break out thresholding from other functions (10)
+1. get a picture of the best fit lines for the lane pixels (0)
+1. write the curvature and distance from center at top of each image (30)
+1. average lane lines across time to reduce error (1)
+1. discuss challenges faced -- finding right thresholding, getting the right lane to work correctly, passing img variable name between functions, (30)

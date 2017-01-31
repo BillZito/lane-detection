@@ -57,7 +57,7 @@ def calibrate_cam():
 '''
 undistort takes the 20 obj/imgpoints from calibration and uses them to distort the 6 test iamges
 '''
-def undist(objpoints, imgpoints):
+def save_dist_pickle(objpoints, imgpoints):
   
   # change name of file to distort a different image
   # img = cv2.imread('test_images/test1.jpg')
@@ -66,22 +66,12 @@ def undist(objpoints, imgpoints):
   #does it return, what is the distance, what are the r and t vals
   ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, img_size, None, None)
   
-  test_list = os.listdir('test_images')
-
-  #undistort all images
-  for index, img_name in enumerate(test_list):
-    if img_name.startswith('test'):
-      print('img name is', img_name)
-
-      img = cv2.imread('test_images/' + img_name)
-      dst = cv2.undistort(img, mtx, dist, None, mtx)
-      cv2.imwrite('output_images/' + img_name + '_undistorted.jpg', dst)
 
   # save the matrix and distance so dont have to calculate each time
   dist_pickle = {}
-  dist_pickle["mtx"] = mtx
-  dist_pickle["dist"] = dist
-  pickle.dump( dist_pickle, open("test_dist_pickle.p", "wb"))
+  dist_pickle['mtx'] = mtx
+  dist_pickle['dist'] = dist
+  pickle.dump( dist_pickle, open('test_dist_pickle.p', 'wb'))
   
   #show images
   # f, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
@@ -90,9 +80,49 @@ def undist(objpoints, imgpoints):
   # ax2.imshow(dst)
   # ax2.set_title('Undistoredted Image', fontsize=30)
 
+'''
+undistort one image given the matrix and distances
+'''
+def undist(img, mtx, dist):
+  dst = cv2.undistort(img, mtx, dist, None, mtx)
+  # cv2.imwrite('test_mctesterson.jpg', dst)
+  return dst
+
+'''
+undistort all images in a list
+'''
+def undist_all(test_list, mtx, dist):
+  #loop through each img in list, undistort, and save
+  for index, img_name in enumerate(test_list):
+    if img_name.startswith('test'):
+      print('img name is', img_name)
+
+      img = cv2.imread('test_images/' + img_name)
+      dst = cv2.undistort(img, mtx, dist, None, mtx)
+      cv2.imwrite('output_images/' + img_name + '_undistorted.jpg', dst)
 
 if __name__ == '__main__':
   # objpoints, imgpoints = calibrate_cam()
   # print('calibration complete')
   # undist(objpoints, imgpoints)
-  # print('undistort complete')
+  print('undistort complete')
+
+  # test_list = os.listdir('test_images')
+  # with open('test_dist_pickle.p', 'rb') as pick:
+  #   dist_pickle = pickle.load(pick)
+
+  # mtx = dist_pickle['mtx']
+  # dist = dist_pickle['dist']
+
+  # image = cv2.imread('test_images/test2.jpg')
+  # plt.imshow(image)
+  # plt.title('original')
+  # plt.show()
+
+  # dst = undist(image, mtx, dist)
+  # plt.imshow(dst)
+  # plt.title('undistorted')
+  # plt.show()  
+  # undist_all(test_list, mtx, dist)
+
+

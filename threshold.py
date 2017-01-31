@@ -1,9 +1,21 @@
 import cv2
+import pickle
 import numpy as np
 import scipy.misc as sci
+from calibrate import undist
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from moviepy.editor import VideoFileClip
+
+'''
+load undistortion matrix from camera 
+'''
+with open('test_dist_pickle.p', 'rb') as pick:
+  dist_pickle = pickle.load(pick)
+
+mtx = dist_pickle['mtx']
+dist = dist_pickle['dist']
+
 
 '''
 calculate the threshold of x or y sobel given certain thesh and kernel sizes
@@ -134,10 +146,10 @@ def change_perspective(img):
 
   # set fixed transforms based on image size
   src = np.float32(
-    [[(img_size[0] / 2) - 40, img_size[1] / 2 + 90],
-    [((img_size[0] / 6) + 40), img_size[1]],
-    [(img_size[0] * 5 / 6) + 115, img_size[1]],
-    [(img_size[0] / 2 + 42), img_size[1] / 2 + 90]])
+    [[(img_size[0] / 2) - 36, img_size[1] / 2 + 90],
+    [((img_size[0] / 6) + 50), img_size[1]],
+    [(img_size[0] * 5 / 6) + 80, img_size[1]],
+    [(img_size[0] / 2 + 36), img_size[1] / 2 + 90]])
 
   dst = np.float32(
     [[(img_size[0] / 4), 0],
@@ -243,15 +255,15 @@ def calc_curve(left_vals, right_vals):
   right_fitx = right_fit[0]*right_yvals**2 + right_fit[1]*right_yvals + right_fit[2]
 
   #plot left (red) and right (blue) lanes 
-  plt.plot(leftx, left_yvals, 'o', color='red')
-  plt.plot(rightx, right_yvals, 'o', color='blue')
-  plt.xlim(0, 1280)
-  plt.ylim(0, 720)
+  # plt.plot(leftx, left_yvals, 'o', color='red')
+  # plt.plot(rightx, right_yvals, 'o', color='blue')
+  # plt.xlim(0, 1280)
+  # plt.ylim(0, 720)
 
   #and their polynomials with green best fit
-  plt.plot(left_fitx, left_yvals, color='green', linewidth=3)
-  plt.plot(right_fitx, right_yvals, color='green', linewidth=3)
-  plt.gca().invert_yaxis()
+  # plt.plot(left_fitx, left_yvals, color='green', linewidth=3)
+  # plt.plot(right_fitx, right_yvals, color='green', linewidth=3)
+  # plt.gca().invert_yaxis()
   # plt.show()
 
   #convert from pixel space to meter space
@@ -323,6 +335,7 @@ def draw_on_road(img, warped, left_fitx, left_yvals, right_fitx, right_yvals):
 
 '''
 Run all steps of processing on an image. 
+0. Undistort image
 1. Create binary thresholds
 2. Change to birds-eye-view
 3. Calculate curvature of left/right lane
@@ -330,13 +343,21 @@ Run all steps of processing on an image.
 '''
 def process_image(img):
 
-  combo_image = combo_thresh(img)
+  undist_img = undist(img, mtx, dist)
+  # plt.imshow(undist_img)
+  # plt.title('undist_img')
+  # plt.show()
+
+  combo_image = combo_thresh(undist_img)
   # plt.imshow(combo_image, cmap='gray')
   # plt.title('combo_image')
   # plt.show()
   # sci.imsave('./output_images/combo_threshold_1.jpg', combo_image)
 
   warped_image = change_perspective(combo_image)
+  # plt.imshow(warped_image, cmap='gray')
+  # plt.title('warped_image')
+  # plt.show()
   
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
   left_vals, right_vals = get_lr(warped_image)
@@ -375,19 +396,23 @@ create a line class to keep track of important information about each line
 if __name__ == '__main__':
 
   #set video variables
-  # proj_output = 'output5.mp4'
-  # clip1 = VideoFileClip('project_video.mp4')
+  proj_output = 'output5.mp4'
+  clip1 = VideoFileClip('project_video.mp4')
 
-  # #run process image on each video clip and save to file
-  # output_clip = clip1.fl_image(process_image)
-  # output_clip.write_videofile(proj_output, audio=False)
+  #run process image on each video clip and save to file
+  output_clip = clip1.fl_image(process_image)
+  output_clip.write_videofile(proj_output, audio=False)
 
 
   # left = Line()
   # right = Line()
   # image = mpimg.imread('straight_road_1x.jpg')
-  image = mpimg.imread('output_images/test5_undistorted.jpg')
-  colored_image = process_image(image)
+  # image = mpimg.imread('output_images/test6_undistorted.jpg')
+  # plt.imshow(image)
+  # plt.title('norm image')
+  # plt.show()
+
+  # colored_image = process_image(image)
 
   # plt.imshow(colored_image)
   # plt.title('colored_image')
