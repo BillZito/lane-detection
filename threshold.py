@@ -84,13 +84,13 @@ def hls_thresh(img, thresh=(0, 255)):
 '''
 combine the thresholding functions
 '''
-def combo_thresh():
-  x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=3, thresh=(10, 120))
+def combo_thresh(img):
+  x_thresholded = abs_sobel_thresh(img, orient='x', sobel_kernel=3, thresh=(10, 120))
   # plt.imshow(x_thresholded, cmap='gray')
   # plt.title('xthresh')
   # plt.show()
 
-  y_thresholded = abs_sobel_thresh(image, orient='y', sobel_kernel=3, thresh=(15, 100))
+  y_thresholded = abs_sobel_thresh(img, orient='y', sobel_kernel=3, thresh=(15, 100))
   # plt.imshow(y_thresholded, cmap='gray')
   # plt.title('ythresh')
   # plt.show()
@@ -102,31 +102,23 @@ def combo_thresh():
   # plt.title('x and y')
   # plt.show()
 
-  hls_thresholded = hls_thresh(image, thresh=(90, 255))
+  hls_thresholded = hls_thresh(img, thresh=(90, 255))
   # plt.imshow(hls_thresholded, cmap='gray')
   # plt.title('hls')
   # plt.show()
   
-
-  # binary_output = np.zeros_like(x_thresholded)
-  # # using bitwise or + and, look up how working
-  # binary_output[((x_thresholded == 1) & (y_thresholded == 1)) & (hls_thresholded == 1)] = 1
-  # plt.imshow(binary_output, cmap='gray')
-  # plt.title('x and y, and hls')
-  # plt.show()
-
-  mag_thresholded = mag_thresh(image, sobel_kernel=3, mag_thresh=(20, 160))
+  mag_thresholded = mag_thresh(img, sobel_kernel=3, mag_thresh=(20, 160))
   # plt.imshow(mag_thresholded, cmap='gray')
   # plt.title('magnitude')
   # plt.show()
 
-  dir_thresholded = dir_thresh(image, sobel_kernel=15, thresh=(.7, 1.2))  
+  dir_thresholded = dir_thresh(img, sobel_kernel=15, thresh=(.7, 1.2))  
   # plt.imshow(dir_thresholded, cmap='gray')  
   # plt.title('directional')
   # plt.show()
 
   binary_output = np.zeros_like(dir_thresholded)
-  binary_output[((dir_thresholded == 1) & (mag_thresholded == 1))] = 1
+  binary_output[((dir_thresholded == 1) & (mag_thresholded == 1) & (hls_thresholded == 1))] = 1
   # plt.imshow(binary_output, cmap='gray')
   # plt.title('dir and mag')
   # plt.show()
@@ -142,7 +134,7 @@ def combo_thresh():
 warp the perspective based on 4 points
 '''
 def changePerspective(img):
-  img_size = (image.shape[1], image.shape[0])
+  img_size = (img.shape[1], img.shape[0])
   # print('image shape is', img_size)
   # [0] is 720, [1] is 128-
   src = np.float32(
@@ -160,7 +152,7 @@ def changePerspective(img):
   # print('dst is', dst)
 
   # cv2.fillConvexPoly(image, src, 1)
-  # plt.imshow(image)
+  # plt.imshow(img)
   # plt.title('lines')
   # plt.show()
   M = cv2.getPerspectiveTransform(src, dst)
@@ -176,7 +168,7 @@ def get_lr(warped_image):
   #eventually divide vertically by 8 (720/8 is 90)
   half_height = int(warped_image.shape[0]/2)
   left_range = (200, 400)
-  right_range = (900, 1100)
+  right_range = (650, 1150)
 
   full_hist = np.sum(warped_image[half_height:, :], axis=0)
   left_histogram = np.sum(warped_image[half_height:, left_range[0]: left_range[1]], axis=0)
@@ -207,9 +199,10 @@ def get_lr(warped_image):
   # print('leftxy', left_xy.shape)
   # print('rightxy', right_xy.shape)
 
-  plt.plot(full_hist)
-  plt.title('right vals')
+  # plt.plot(full_hist)
+  # plt.title('full hist')
   # plt.show()
+
   return left_xy, right_xy
 
 def get_points(vals, width_offset):
@@ -314,8 +307,8 @@ class Line():
 '''
 given left and right lines values, add to original image
 '''
-def draw_on_road(image, warped, left_fitx, left_yvals, right_fitx, right_yvals):
-  #create image to draw the lines on
+def draw_on_road(img, warped, left_fitx, left_yvals, right_fitx, right_yvals):
+  #create img to draw the lines on
   warp_zero = np.zeros_like(warped).astype(np.uint8)
   color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
 
@@ -325,10 +318,10 @@ def draw_on_road(image, warped, left_fitx, left_yvals, right_fitx, right_yvals):
   # print('pts left', pts_left.shape, 'pts right', pts_right.shape)
   pts = np.hstack((pts_left, pts_right))
 
-  #draw the lane onto the warped blank image
+  #draw the lane onto the warped blank img
   cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
 
-  img_size = (image.shape[1], image.shape[0])
+  img_size = (img.shape[1], img.shape[0])
 
   dst = np.float32(
     [[(img_size[0] / 2) - 40, img_size[1] / 2 + 90],
@@ -352,10 +345,10 @@ def draw_on_road(image, warped, left_fitx, left_yvals, right_fitx, right_yvals):
 
 
   #warp the blank back oto the original image using inverse perspective matrix
-  newwarp = cv2.warpPerspective(color_warp, Minv, (image.shape[1], image.shape[0]))
+  newwarp = cv2.warpPerspective(color_warp, Minv, (img.shape[1], img.shape[0]))
 
   #combine the result with the original 
-  result = cv2.addWeighted(image, 1, newwarp, 0.3, 0)
+  result = cv2.addWeighted(img, 1, newwarp, 0.3, 0)
   # print('result shape', result.shape)
   # plt.imshow(result)
   # plt.show()
@@ -363,49 +356,51 @@ def draw_on_road(image, warped, left_fitx, left_yvals, right_fitx, right_yvals):
   return result
   # sci.imsave('mytest.jpg', result)
 
-def process_image(image):
+def process_image(img):
   # plt.imshow(image)
   # plt.title('starter')
   # plt.show()
 
-  combo_image = combo_thresh()
+  combo_image = combo_thresh(img)
   # plt.imshow(combo_image, cmap='gray')
   # plt.title('combo_image')
   # plt.show()
 
   warped_image = changePerspective(combo_image)
-  # plt.imshow(warped_image, cmap='gray')
-  # plt.title('warped_image')
-  # plt.show()
-  # print('warped shape', warped_image.shape)
+  
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
   left_vals, right_vals = get_lr(warped_image)
   left_fitx, left_yvals, right_fitx, right_yvals = calc_curve(left_vals, right_vals)
-  result = draw_on_road(image, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
+  result = draw_on_road(img, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
   return result
 
 if __name__ == '__main__':
+  # image = mpimg.imread('output_images/test2_undistorted.jpg')
+
+  #set video variables
+  proj_output = 'output2.mp4'
+  clip1 = VideoFileClip('project_video.mp4')
+
+  #run process image on each video clip and save to file
+  output_clip = clip1.fl_image(process_image)
+  output_clip.write_videofile(proj_output, audio=False)
+
+
+
   # left = Line()
   # right = Line()
   # image = mpimg.imread('straight_road_1x.jpg')
-  image = mpimg.imread('output_images/test6_undistorted.jpg')
-  # process_image(image)
+  # colored_image = process_image(image)
 
-  proj_output = 'challenge_output.mp4'
+  # plt.imshow(colored_image)
+  # plt.title('colored_image')
+  # plt.show()
 
-  clip1 = VideoFileClip('challenge_video.mp4')
 
-  output_clip = clip1.fl_image(process_image)
-
-  print('saving file')
-  output_clip.write_videofile(proj_output, audio=False)
-  print('file saved')
   # x_thresholded = abs_sobel_thresh(image, orient='x', sobel_kernel=3, thresh=(10, 120))
   # plt.imshow(x_thresholded, cmap='gray')
   # plt.title('xthresh')
   # plt.show()
-
-
 
 
   # y_thresholded = abs_sobel_thresh(image, orient='y', sobel_kernel=3, thresh=(15, 100))
