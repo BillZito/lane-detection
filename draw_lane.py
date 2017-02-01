@@ -77,6 +77,7 @@ def get_lr(warped_image):
 
   right_start = right_range[0] + right_max - 70
   right_end = right_range[0] + right_max + 70
+  # print('right end is', right_end)
 
   left_vals = warped_image[half_height:, left_start: left_end]
   right_vals = warped_image[half_height:, right_start: right_end]
@@ -123,13 +124,13 @@ def calc_curve(left_vals, right_vals):
   # set left/righty to the first values, and left/rightx to the second
   left_yvals = np.array([elem[0] for idx, elem in enumerate(left_vals)])
   leftx = np.array([elem[1] for idx, elem in enumerate(left_vals)])
-
+  # print('leftx', leftx.shape)
 
   # print('left yvals.shape', left_yvals.shape)
   # print('leftx.shape', leftx.shape)
   right_yvals = np.array([elem[0] for idx, elem in enumerate(right_vals)])
   rightx = np.array([elem[1] for idx, elem in enumerate(right_vals)])
-  
+  # print('right x', rightx.shape)
 
 
   #fit to second order polynomial
@@ -180,10 +181,29 @@ def calc_curve(left_vals, right_vals):
   # print('pix dist from center', dist_from_center)
   meters_from_center = xm_per_pix * dist_from_center
   string_meters = str(round(meters_from_center, 2))
+  # right_string = str(round(right_max, 2))
   # print('string meters', string_meters)
+  # ', right_max: ' + right_string 
   # print('meters from center', meters_from_center)
-  full_text = 'left: ' + str(round(left_curverad, 2)) + ', right: ' + str(round(right_curverad, 2)) + ', dist from center: ' + string_meters
+  full_text = 'left: ' + str(round(left_curverad, 2)) + ', right: ' + \
+    str(round(right_curverad, 2)) + ', dist from center: ' + string_meters 
 
+  if abs(left_curverad - right_curverad) < 2000 \
+    and right_max < 1100 and rightx.shape[0] > 100 or not lane.curve['full_text']:
+    # print('setting vals now')
+    lane.curve['left_fitx'] = left_fitx
+    lane.curve['left_yvals'] = left_yvals
+    lane.curve['right_fitx'] = right_fitx
+    lane.curve['right_yvals'] = right_yvals
+    lane.curve['full_text'] = full_text
+  else:
+    # print('getting previous vals')
+    left_fitx= lane.curve['left_fitx'] 
+    left_yvals = lane.curve['left_yvals'] 
+    right_fitx = lane.curve['right_fitx'] 
+    right_yvals = lane.curve['right_yvals']
+    full_text = lane.curve['full_text']
+  
   return left_fitx, left_yvals, right_fitx, right_yvals, full_text
 
 
@@ -256,7 +276,6 @@ def process_image(img):
   # plt.imshow(combo_image, cmap='gray')
   # plt.title('combo_image')
   # plt.show()
-  # sci.imsave('./output_images/combo_threshold_1.jpg', combo_image)
 
   warped_image = change_perspective(combo_image)
   # plt.imshow(warped_image, cmap='gray')
@@ -268,43 +287,45 @@ def process_image(img):
   left_fitx, left_yvals, right_fitx, right_yvals, full_text = calc_curve(left_vals, right_vals)
   result = draw_on_road(img, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
   cv2.putText(result, full_text, (200, 100), cv2.FONT_HERSHEY_COMPLEX, 1, 255)
+  # sci.imsave('./output_images/final_6.jpg', result)
   return result
 
 
 '''
 create a line class to keep track of important information about each line
 '''
-# class Line():
-#   def __init__(self):
-#     #if line was deteced in last iteration
-#     self.detected = False
-#     # x values of last n fits
-#     self.recent_xfitted = []
-#     #average x values of the fitted line over the last n iterations
-#     self.bestx = None
-#     #polynomial coefficients averaged over the last n
-#     self.best_fit = None
-#     #polynomial coefficients of the most recent fit
-#     self.current_fit = [np.array([False])]
-#     #raidus of curvature of the line in some units
-#     self.radius_of_curvature = None
-#     #distance in meters of vehicle center from the line
-#     self.line_base_pos = None
-#     #difference in fit coefficients between last and new fits
-#     self.diffs = np.array([0, 0, 0], dtype='float')
-#     #xvalues for detected line pixels
-#     self.allx = None
-#     #yvals 
-#     self.ally = None
+class Lane():
+  def __init__(self):
+    #if line was deteced in last iteration
+    self.curve = {'full_text': ''}
+    # self.detected = False
+    # # x values of last n fits
+    # self.recent_xfitted = []
+    # #average x values of the fitted line over the last n iterations
+    # self.bestx = None
+    # #polynomial coefficients averaged over the last n
+    # self.best_fit = None
+    # #polynomial coefficients of the most recent fit
+    # self.current_fit = [np.array([False])]
+    # #raidus of curvature of the line in some units
+    # self.radius_of_curvature = None
+    # #distance in meters of vehicle center from the line
+    # self.line_base_pos = None
+    # #difference in fit coefficients between last and new fits
+    # self.diffs = np.array([0, 0, 0], dtype='float')
+    # #xvalues for detected line pixels
+    # self.allx = None
+    # #yvals 
+    # self.ally = None
 
 
 if __name__ == '__main__':
-
-  #set video variables
-  proj_output = 'output5.mp4'
+  lane = Lane()
+  # #set video variables
+  proj_output = 'output3.mp4'
   clip1 = VideoFileClip('project_video.mp4')
 
-  #run process image on each video clip and save to file
+  # #run process image on each video clip and save to file
   output_clip = clip1.fl_image(process_image)
   output_clip.write_videofile(proj_output, audio=False)
 
@@ -312,7 +333,7 @@ if __name__ == '__main__':
   # left = Line()
   # right = Line()
   # image = mpimg.imread('straight_road_1x.jpg')
-  # image = mpimg.imread('output_images/test5_undistorted.jpg')
+  # image = mpimg.imread('test_images/test6.jpg')
   # plt.imshow(image)
   # plt.title('norm image')
   # plt.show()

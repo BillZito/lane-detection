@@ -21,7 +21,7 @@ Steps:
 
 ###1. Calibrate the camera
 
-In calibrate.py, the camera is calibrated using opencv functions with 20 chessboard images from different angles and distances. calibrate_cam() looks for the 9x6 inner corners in each image and stores them in an array. An example chessboard image:
+c**alibrate.py:** the camera is calibrated using opencv functions with 20 chessboard images from different angles and distances. calibrate_cam() looks for the 9x6 inner corners in each image and stores them in an array. An example chessboard image:
 
 ![alt tag](./camera_cal/calibration11.jpg)
 
@@ -41,7 +41,7 @@ And after undistortion (notice how the edge of the top right bush changed):
 
 ###3. Apply binary thresholds to identify lane lines
 
-threshold_helpers.py contains the fucntions for applying binary thresholds detect the lane lines.
+**threshold_helpers.py** contains the fucntions for applying binary thresholds detect the lane lines.
 
 1. abs_sobel_thresh(): calculates the threshold along either x (mostly vertical) or y (mostly horizontal) orients, given passed in thersholds (upper and lower bounds) and kernel values (which determines smoothness). The red color spectrum was found to give the best thresholds via guess and test.
 1. mag_thresh(): creates a magnitude threshold baed on the combined values of the sobel in x and y directions.
@@ -58,9 +58,9 @@ After all thresholds are applied:
 
 ###4. Transform perspective to birds-eye-view
 
-draw_lane.py contains the code for transforming perspective. 
+**draw_lane.py** contains the code for transforming perspective. 
 
-change_perspective(): takes a road image and maps it to the birds eye view. A transformation matrix, M, is calculated between the src points (4 corners of a straight lane) and the destination points (a rectangle/birds eye view of the lane). cv2.warpPerspective then maps the previous image to the birds eye view.
+**change_perspective():** takes a road image and maps it to the birds eye view. A transformation matrix, M, is calculated between the src points (4 corners of a straight lane) and the destination points (a rectangle/birds eye view of the lane). cv2.warpPerspective then maps the previous image to the birds eye view.
 
 The src points are based proportionally on the size of the image, and were determined by picking 4 points on an image of the straight lane. 
 
@@ -72,33 +72,37 @@ After changing perspective, the left and right lines should appear parallel sinc
 
 ###5. Detect left/right lane pixels and determine curvature
 
-draw_lane.py contains the code for deteching l/r lane pixels.
+**draw_lane.py** contains the code for deteching l/r lane pixels.
 
-*get_lr(): takes the warped and thresholded image and extracts the locations of the pixels in it. Given a range for the left and right lanes, the peak values across rows are found, corresponding to where there is likely a lane. 
+**get_lr():** takes the warped and thresholded image and extracts the locations of the pixels in it. Given a range for the left and right lanes, the peak values across rows are found, corresponding to where there is likely a lane. 
 
 A range around this value is then extracted as being likely to correspond to the lane. 
 
 
-*get_points(): is a helper function to get the x and y coordinates of each pixel
+**get_points():** is a helper function to get the x and y coordinates of each pixel
 
-*calc_curve(): takes the x and y coordinates of the pixels, fits a second order polynomial to them, and plots them. 
+**calc_curve():** takes the x and y coordinates of the pixels, fits a second order polynomial to them, and plots them. Then converts from pixel space to meter space and calculates the left and right curve radius.
+  
+**class Lane():** keeps track of the left and right values, curvatures, and text for the image. Several checks are applied on the data before accepting it is a new lane: the curves most be similar in magnitude, and the right lane must have enough pixels in the right region of the screen. Otherwise, the previous lane values are used. 
 
-*(w/in calc curve): converts from pixel space to meter space and calculates the left and right curve radius.
+Example best fit lines:
 
 ![alt tag](./output_images/best_fit_lines.png)
 
 
 ###6. Warp detected lane back onto the original image
 
-draw_lane.py puts everything together. 
+**draw_lane.py** also puts all the pieces together. 
 
-*draw_on_road(): Given the calculated lines of best fit, the x and y values are converted to points and filled in green. 
+**draw_on_road():** Given the calculated lines of best fit, the x and y values are converted to points and filled in green. 
 
 The inverse perspective transform of the original birds eye transform is used to warp the images back to the original image. 
 
-*process_image(): Puts all the steps above together. An example end-product: 
+**process_image():** Puts all the steps above together. 
 
-![alt tag](./output_images/drawn_lane_lines.jpg)
+An example end-product: 
+
+![alt tag](./output_images/final_6.jpg)
 
 ---
 
@@ -117,7 +121,3 @@ The inverse perspective transform of the original birds eye transform is used to
 ## Acknowledgements 
 Thank you to Udacity for selecting me for the nanodegree and helping me meet other self-driving car programmers.
 
-
-## Todo
-1. write the curvature and distance from center at top of each image (30)
-1. average lane lines across time to reduce error (1)
