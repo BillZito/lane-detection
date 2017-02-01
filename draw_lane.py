@@ -123,11 +123,15 @@ def calc_curve(left_vals, right_vals):
   # set left/righty to the first values, and left/rightx to the second
   left_yvals = np.array([elem[0] for idx, elem in enumerate(left_vals)])
   leftx = np.array([elem[1] for idx, elem in enumerate(left_vals)])
+
+
   # print('left yvals.shape', left_yvals.shape)
   # print('leftx.shape', leftx.shape)
   right_yvals = np.array([elem[0] for idx, elem in enumerate(right_vals)])
   rightx = np.array([elem[1] for idx, elem in enumerate(right_vals)])
   
+
+
   #fit to second order polynomial
   left_fit = np.polyfit(left_yvals, leftx, 2)
   left_fitx = left_fit[0]*left_yvals**2 + left_fit[1]*left_yvals + left_fit[2]
@@ -136,16 +140,16 @@ def calc_curve(left_vals, right_vals):
   right_fitx = right_fit[0]*right_yvals**2 + right_fit[1]*right_yvals + right_fit[2]
 
   #plot left (red) and right (blue) lanes 
-  plt.plot(leftx, left_yvals, 'o', color='red')
-  plt.plot(rightx, right_yvals, 'o', color='blue')
-  plt.xlim(0, 1280)
-  plt.ylim(0, 720)
+  # plt.plot(leftx, left_yvals, 'o', color='red')
+  # plt.plot(rightx, right_yvals, 'o', color='blue')
+  # plt.xlim(0, 1280)
+  # plt.ylim(0, 720)
 
   #and their polynomials with green best fit
-  plt.plot(left_fitx, left_yvals, color='green', linewidth=3)
-  plt.plot(right_fitx, right_yvals, color='green', linewidth=3)
-  plt.gca().invert_yaxis()
-  plt.show()
+  # plt.plot(left_fitx, left_yvals, color='green', linewidth=3)
+  # plt.plot(right_fitx, right_yvals, color='green', linewidth=3)
+  # plt.gca().invert_yaxis()
+  # plt.show()
 
   #convert from pixel space to meter space
   ym_per_pix = 30/720
@@ -159,8 +163,27 @@ def calc_curve(left_vals, right_vals):
   right_eval = np.max(right_yvals)
   left_curverad = ((1 + (2*left_fit_cr[0]*left_eval + left_fit_cr[1])**2)**1.5)/np.absolute(2*left_fit_cr[0])
   right_curverad = ((1 + (2*right_fit_cr[0]*right_eval + right_fit_cr[1])**2)**1.5)/np.absolute(2*right_fit_cr[0])
+  
+  # plt.show()
+
   # print('left curverad', left_curverad)
   # print('rightcurverad', right_curverad)
+
+
+  # calculate left_min by finding minimum value in first index of array
+  left_min = np.amin(leftx, axis=0)
+  # print('left_min', left_min)
+  right_max = np.amax(rightx, axis=0)
+  # print('right max', right_max)
+  actual_center = (right_max + left_min)/2
+  dist_from_center =  actual_center - (1280/2)
+  # print('pix dist from center', dist_from_center)
+  meters_from_center = xm_per_pix * dist_from_center
+  string_meters = str(round(meters_from_center, 2))
+  # print('string meters', string_meters)
+  # print('meters from center', meters_from_center)
+  plt.title('left: ' + str(round(left_curverad, 2)) + ', right: ' + str(round(right_curverad, 2)) + ', dist from center: ' + string_meters)
+
   return left_fitx, left_yvals, right_fitx, right_yvals
 
 
@@ -277,25 +300,25 @@ create a line class to keep track of important information about each line
 if __name__ == '__main__':
 
   #set video variables
-  # proj_output = 'output5.mp4'
-  # clip1 = VideoFileClip('project_video.mp4')
+  proj_output = 'output5.mp4'
+  clip1 = VideoFileClip('project_video.mp4')
 
   #run process image on each video clip and save to file
-  # output_clip = clip1.fl_image(process_image)
-  # output_clip.write_videofile(proj_output, audio=False)
+  output_clip = clip1.fl_image(process_image)
+  output_clip.write_videofile(proj_output, audio=False)
 
 
   # left = Line()
   # right = Line()
   # image = mpimg.imread('straight_road_1x.jpg')
-  image = mpimg.imread('output_images/test6_undistorted.jpg')
-  plt.imshow(image)
-  plt.title('norm image')
-  plt.show()
+  # image = mpimg.imread('output_images/test5_undistorted.jpg')
+  # plt.imshow(image)
+  # plt.title('norm image')
+  # plt.show()
 
-  colored_image = process_image(image)
+  # colored_image = process_image(image)
 
-  plt.imshow(colored_image)
-  plt.title('colored_image')
-  plt.show()
+  # plt.imshow(colored_image)
+  # # plt.title('colored_image')
+  # plt.show()
 

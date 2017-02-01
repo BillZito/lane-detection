@@ -2,6 +2,8 @@
 
 ![alt tag](./output_images/drawn_lane_lines.jpg)
 
+---
+
 ## Overview ##
 Given a video of a car driving in its lane, the program identifies the lane and draws it onto the image.
 
@@ -98,6 +100,7 @@ The inverse perspective transform of the original birds eye transform is used to
 
 ![alt tag](./output_images/drawn_lane_lines.jpg)
 
+---
 
 ## Key Learnings
 
@@ -109,7 +112,7 @@ The inverse perspective transform of the original birds eye transform is used to
 
 1. After developing my convolutional neural network for maintaining lanes, I knew to visualize my images at each step of the process to avoid stupid mistakes. Given the large number of helper methods for this problem, I also had to make decisions about how to best modularize the code. I decided that the camera calibration functions could stand on their own, as could all of the thresholding functions, allowing the main draw_lane.py to call the necessary helpers in process_image.
 
-
+---
 
 ## Acknowledgements 
 Thank you to Udacity for selecting me for the nanodegree and helping me meet other self-driving car programmers.
