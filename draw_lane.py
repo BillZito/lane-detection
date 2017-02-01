@@ -322,7 +322,7 @@ class Lane():
 if __name__ == '__main__':
   lane = Lane()
   # #set video variables
-  proj_output = 'output3.mp4'
+  proj_output = 'output.mp4'
   clip1 = VideoFileClip('project_video.mp4')
 
   # #run process image on each video clip and save to file

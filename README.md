@@ -5,7 +5,7 @@
 ---
 
 ## Overview ##
-Given a video of a car driving in its lane, the program identifies the lane and draws it onto the image.
+Given a video of a car driving in its lane, the program identifies the lane and draws it onto the image. Output video is output.mp4
 
 Steps: 
 

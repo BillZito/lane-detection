@@ -1,4 +1,5 @@
 test_dist_pickle.p
-*.mp4
-straight_road_1x.jpg
 __pycache__
+output_videos
+challenge_video.mp4
+project_video.mp4
