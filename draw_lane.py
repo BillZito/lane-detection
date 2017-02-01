@@ -182,9 +182,9 @@ def calc_curve(left_vals, right_vals):
   string_meters = str(round(meters_from_center, 2))
   # print('string meters', string_meters)
   # print('meters from center', meters_from_center)
-  plt.title('left: ' + str(round(left_curverad, 2)) + ', right: ' + str(round(right_curverad, 2)) + ', dist from center: ' + string_meters)
+  full_text = 'left: ' + str(round(left_curverad, 2)) + ', right: ' + str(round(right_curverad, 2)) + ', dist from center: ' + string_meters
 
-  return left_fitx, left_yvals, right_fitx, right_yvals
+  return left_fitx, left_yvals, right_fitx, right_yvals, full_text
 
 
 '''
@@ -265,8 +265,9 @@ def process_image(img):
   
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
   left_vals, right_vals = get_lr(warped_image)
-  left_fitx, left_yvals, right_fitx, right_yvals = calc_curve(left_vals, right_vals)
+  left_fitx, left_yvals, right_fitx, right_yvals, full_text = calc_curve(left_vals, right_vals)
   result = draw_on_road(img, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
+  cv2.putText(result, full_text, (200, 100), cv2.FONT_HERSHEY_COMPLEX, 1, 255)
   return result
 
 
