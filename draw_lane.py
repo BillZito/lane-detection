@@ -27,10 +27,12 @@ def change_perspective(img):
 
   # set fixed transforms based on image size
   src = np.float32(
-    [[(img_size[0] / 2) - 36, img_size[1] / 2 + 90],
-    [((img_size[0] / 6) + 50), img_size[1]],
-    [(img_size[0] * 5 / 6) + 80, img_size[1]],
-    [(img_size[0] / 2 + 36), img_size[1] / 2 + 90]])
+    [[(img_size[0] / 2) - 33, img_size[1] / 2 + 82],
+    [((img_size[0] / 6) + 37), img_size[1]],
+    [(img_size[0] * 5 / 6) + 118, img_size[1]],
+    [(img_size[0] / 2 + 33), img_size[1] / 2 + 82]])
+  print('src is 1:', (img_size[0] / 2) - 29, img_size[1] / 2 + 82, '2:', (img_size[0] / 6) + 37, img_size[1], \
+    '3:', (img_size[0] * 5 / 6) + 112, img_size[1], '4:', (img_size[0] / 2 + 33), img_size[1] / 2 + 82)
 
   dst = np.float32(
     [[(img_size[0] / 4), 0],
@@ -39,10 +41,24 @@ def change_perspective(img):
     [(img_size[0] * 3 / 4), 0]])
 
   # used to test that src points matched line
-  # cv2.fillConvexPoly(img, src, 1)
-  # plt.imshow(img)
-  # plt.title('lines')
-  # plt.show()
+  cv2.fillConvexPoly(img, src.astype('int32'), 1)
+  plt.imshow(img)
+  plt.title('lines')
+  plt.show()
+
+  '''
+  warp_zero = np.zeros_like(warped).astype(np.uint8)
+  color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
+
+  #recast x and y into usable format for cv2.fillPoly
+  pts_left = np.array([np.transpose(np.vstack([left_fitx, left_yvals]))])
+  pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, right_yvals])))])
+  # print('pts left', pts_left.shape, 'pts right', pts_right.shape)
+  pts = np.hstack((pts_left, pts_right))
+
+  #draw the lane onto the warped blank img
+  cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
+  '''
 
   # create a transformation matrix based on the src and destination points
   M = cv2.getPerspectiveTransform(src, dst)
@@ -65,9 +81,9 @@ def lr_curvature(binary_warped):
   # plt.title('histo')
   # plt.show()
 
-  # plt.imshow(out_img)
-  # plt.title('outimage stacked')
-  # plt.show()
+  plt.imshow(out_img)
+  plt.title('before windows')
+  plt.show()
 
   leftx_base = np.argmax(histogram[:midpoint])
   rightx_base = np.argmax(histogram[midpoint:]) + midpoint
@@ -90,8 +106,8 @@ def lr_curvature(binary_warped):
   #min number of pixels found to recenter
   minpix = 50
 
-  left_lane_inds = np.array([])
-  right_lane_inds = np.array([])
+  left_lane_inds = []
+  right_lane_inds = []
 
   #step through the windows
   for window in range(nwindows):
@@ -110,6 +126,8 @@ def lr_curvature(binary_warped):
     #draw the windows on the image
     cv2.rectangle(out_img, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high), (0, 255, 0), 2)
     cv2.rectangle(out_img, (win_xright_low, win_y_low), (win_xright_high, win_y_high), (0, 255, 0), 2)
+    # cv2.rectangle(out_img,(win_xleft_low,win_y_low),(win_xleft_high,win_y_high),(0,255,0), 2) 
+    # cv2.rectangle(out_img,(win_xright_low,win_y_low),(win_xright_high,win_y_high),(0,255,0), 2) 
 
     #identify nozero pixels within the window
     #nonzero is numpy function that returns non zero vals
@@ -117,11 +135,8 @@ def lr_curvature(binary_warped):
     good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
 
     #append these indices
-    print('left_lane inds before', left_lane_inds.shape, 'goodleft', good_left_inds.shape)
-    left_lane_inds = np.append(left_lane_inds, np.int(good_left_inds), axis=0)
-    right_lane_inds = np.append(right_lane_inds, np.int(good_right_inds), axis=0)
-    print('left_lane inds after', left_lane_inds.shape, left_lane_inds[0], left_lane_inds[1])
-
+    left_lane_inds.append(good_left_inds)
+    right_lane_inds.append(good_right_inds)
 
     #only recent if there are at least 50 dots (and therefore trustowrthy sample)
     if len(good_left_inds) > minpix:
@@ -129,36 +144,37 @@ def lr_curvature(binary_warped):
     if len(good_right_inds) > minpix: 
       rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
 
-    #concat arrays of indices
-    # left_lane_inds = np.concatenate(left_lane_inds)
-    # right_lane_inds = np.concatenate(right_lane_inds)
+  #concat arrays of indices
+  left_lane_inds = np.concatenate(left_lane_inds)
+  right_lane_inds = np.concatenate(right_lane_inds)
 
-    #extract left and right line pixel positions
-    #getting all of the individal nonzero values from the lane_inds arrays?
-    leftx = nonzerox[left_lane_inds]
-    lefty = nonzeroy[left_lane_inds]
-    rightx = nonzerox[right_lane_inds]
-    righty = nonzeroy[right_lane_inds]
+  #extract left and right line pixel positions
+  #getting all of the individal nonzero values from the lane_inds arrays?
+  leftx = nonzerox[left_lane_inds]
+  lefty = nonzeroy[left_lane_inds]
+  rightx = nonzerox[right_lane_inds]
+  righty = nonzeroy[right_lane_inds]
 
-    #set up polyfit for left and right
-    left_fit = np.polyfit(lefty, leftx, 2)
-    right_fit = np.polyfit(righty, rightx, 2)
+  #set up polyfit for left and right
+  left_fit = np.polyfit(lefty, leftx, 2)
+  right_fit = np.polyfit(righty, rightx, 2)
 
-    #plot and visualize
-    ploty = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
-    left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
-    right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+  #plot and visualize
+  ploty = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
+  left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+  right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
 
-    out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
-    out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
-    plt.title('after windows')
-    plt.imshow(out_img)
-    plt.plot(left_fitx, ploty, color='yellow')
-    plt.plot(right_fitx, ploty, color='yellow')
-    plt.xlim(0, 1280)
-    plt.ylim(720, 0)
-    # plt.imshow(out_img)
-    plt.show()
+  out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
+  out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
+  plt.title('after windows')
+  plt.imshow(out_img)
+  # plt.show()
+  plt.plot(left_fitx, ploty, color='yellow')
+  plt.plot(right_fitx, ploty, color='yellow')
+  plt.xlim(0, 1280)
+  plt.ylim(720, 0)
+  # plt.imshow(out_img)
+  plt.show()
 
 '''
 get the pixels for the left and right lanes and return them
@@ -340,6 +356,10 @@ def draw_on_road(img, warped, left_fitx, left_yvals, right_fitx, right_yvals):
     [(img_size[0] * 5 / 6) + 115, img_size[1]],
     [(img_size[0] / 2 + 42), img_size[1] / 2 + 90]])
   # print('src is', src)
+    # [[(img_size[0] / 2) - 36, img_size[1] / 2 + 90],
+    # [((img_size[0] / 6) + 50), img_size[1]],
+    # [(img_size[0] * 5 / 6) + 80, img_size[1]],
+    # [(img_size[0] / 2 + 36), img_size[1] / 2 + 90]]
 
   src = np.float32(
     [[(img_size[0] / 4), 0],
@@ -376,9 +396,9 @@ Run all steps of processing on an image.
 def process_image(img):
 
   undist_img = undist(img, mtx, dist)
-  # plt.imshow(undist_img)
-  # plt.title('undist_img')
-  # plt.show()
+  plt.imshow(undist_img)
+  plt.title('undist_img')
+  plt.show()
 
   combo_image = combo_thresh(undist_img)
   # plt.imshow(combo_image, cmap='gray')
@@ -389,7 +409,7 @@ def process_image(img):
   # plt.imshow(warped_image, cmap='gray')
   # plt.title('warped_image')
   # plt.show()
-  lr_curvature(warped_image)
+  # lr_curvature(warped_image)
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
   # left_vals, right_vals = get_lr(warped_image)
   # left_fitx, left_yvals, right_fitx, right_yvals, full_text = calc_curve(left_vals, right_vals)
@@ -440,11 +460,11 @@ if __name__ == '__main__':
 
   # left = Line()
   # right = Line()
-  # image = mpimg.imread('straight_road_1x.jpg')
-  image = mpimg.imread('test_images/test5.jpg')
-  plt.imshow(image)
-  plt.title('norm image')
-  plt.show()
+  image = mpimg.imread('test_images/straight_road_1x.jpg')
+  # image = mpimg.imread('test_images/test4.jpg')
+  # plt.imshow(image)
+  # plt.title('norm image')
+  # plt.show()
 
   process_image(image)
 
