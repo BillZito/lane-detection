@@ -27,12 +27,12 @@ def change_perspective(img):
 
   # set fixed transforms based on image size
   src = np.float32(
-    [[(img_size[0] / 2) - 33, img_size[1] / 2 + 82],
+    [[(img_size[0] / 2) - 31, img_size[1] / 2 + 82],
     [((img_size[0] / 6) + 37), img_size[1]],
-    [(img_size[0] * 5 / 6) + 118, img_size[1]],
-    [(img_size[0] / 2 + 33), img_size[1] / 2 + 82]])
-  print('src is 1:', (img_size[0] / 2) - 29, img_size[1] / 2 + 82, '2:', (img_size[0] / 6) + 37, img_size[1], \
-    '3:', (img_size[0] * 5 / 6) + 112, img_size[1], '4:', (img_size[0] / 2 + 33), img_size[1] / 2 + 82)
+    [(img_size[0] * 5 / 6) + 100, img_size[1]],
+    [(img_size[0] / 2 + 30), img_size[1] / 2 + 82]])
+  # print('src is 1:', (img_size[0] / 2) - 33, img_size[1] / 2 + 82, '2:', (img_size[0] / 6) + 37, img_size[1], \
+    # '3:', (img_size[0] * 5 / 6) + 118, img_size[1], '4:', (img_size[0] / 2 + 33), img_size[1] / 2 + 82)
 
   dst = np.float32(
     [[(img_size[0] / 4), 0],
@@ -41,24 +41,10 @@ def change_perspective(img):
     [(img_size[0] * 3 / 4), 0]])
 
   # used to test that src points matched line
-  cv2.fillConvexPoly(img, src.astype('int32'), 1)
-  plt.imshow(img)
-  plt.title('lines')
-  plt.show()
-
-  '''
-  warp_zero = np.zeros_like(warped).astype(np.uint8)
-  color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
-
-  #recast x and y into usable format for cv2.fillPoly
-  pts_left = np.array([np.transpose(np.vstack([left_fitx, left_yvals]))])
-  pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, right_yvals])))])
-  # print('pts left', pts_left.shape, 'pts right', pts_right.shape)
-  pts = np.hstack((pts_left, pts_right))
-
-  #draw the lane onto the warped blank img
-  cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
-  '''
+  # cv2.fillConvexPoly(img, src.astype('int32'), 1)
+  # plt.imshow(img)
+  # plt.title('lines')
+  # plt.show()
 
   # create a transformation matrix based on the src and destination points
   M = cv2.getPerspectiveTransform(src, dst)
@@ -256,6 +242,9 @@ def calc_curve(left_vals, right_vals):
   rightx = np.array([elem[1] for idx, elem in enumerate(right_vals)])
   # print('right x', rightx.shape)
 
+  #invert
+  # leftx = leftx[::-1]
+  # rightx = rightx[::-1]
 
   #fit to second order polynomial
   left_fit = np.polyfit(left_yvals, leftx, 2)
@@ -351,10 +340,10 @@ def draw_on_road(img, warped, left_fitx, left_yvals, right_fitx, right_yvals):
   img_size = (img.shape[1], img.shape[0])
 
   dst = np.float32(
-    [[(img_size[0] / 2) - 40, img_size[1] / 2 + 90],
-    [((img_size[0] / 6) + 40), img_size[1]],
-    [(img_size[0] * 5 / 6) + 115, img_size[1]],
-    [(img_size[0] / 2 + 42), img_size[1] / 2 + 90]])
+    [[(img_size[0] / 2) - 33, img_size[1] / 2 + 82],
+    [((img_size[0] / 6) + 37), img_size[1]],
+    [(img_size[0] * 5 / 6) + 118, img_size[1]],
+    [(img_size[0] / 2 + 33), img_size[1] / 2 + 82]])
   # print('src is', src)
     # [[(img_size[0] / 2) - 36, img_size[1] / 2 + 90],
     # [((img_size[0] / 6) + 50), img_size[1]],
@@ -401,22 +390,23 @@ def process_image(img):
   plt.show()
 
   combo_image = combo_thresh(undist_img)
-  # plt.imshow(combo_image, cmap='gray')
-  # plt.title('combo_image')
-  # plt.show()
+  plt.imshow(combo_image, cmap='gray')
+  plt.title('combo_image')
+  plt.show()
 
   warped_image = change_perspective(combo_image)
-  # plt.imshow(warped_image, cmap='gray')
-  # plt.title('warped_image')
-  # plt.show()
+  plt.imshow(warped_image, cmap='gray')
+  plt.title('warped_image')
+  plt.show()
+
   # lr_curvature(warped_image)
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
-  # left_vals, right_vals = get_lr(warped_image)
-  # left_fitx, left_yvals, right_fitx, right_yvals, full_text = calc_curve(left_vals, right_vals)
-  # result = draw_on_road(img, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
-  # cv2.putText(result, full_text, (200, 100), cv2.FONT_HERSHEY_COMPLEX, 1, 255)
+  left_vals, right_vals = get_lr(warped_image)
+  left_fitx, left_yvals, right_fitx, right_yvals, full_text = calc_curve(left_vals, right_vals)
+  result = draw_on_road(img, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
+  cv2.putText(result, full_text, (200, 100), cv2.FONT_HERSHEY_COMPLEX, 1, 255)
   # sci.imsave('./output_images/final_6.jpg', result)
-  # return result
+  return result
 
 
 '''
@@ -460,15 +450,15 @@ if __name__ == '__main__':
 
   # left = Line()
   # right = Line()
-  image = mpimg.imread('test_images/straight_road_1x.jpg')
-  # image = mpimg.imread('test_images/test4.jpg')
+  # image = mpimg.imread('test_images/straight_road_1x.jpg')
+  image = mpimg.imread('test_images/test1.jpg')
   # plt.imshow(image)
   # plt.title('norm image')
   # plt.show()
 
-  process_image(image)
+  colored_image = process_image(image)
 
-  # plt.imshow(colored_image)
-  # plt.title('colored_image')
-  # plt.show()
+  plt.imshow(colored_image)
+  plt.title('colored_image')
+  plt.show()
 

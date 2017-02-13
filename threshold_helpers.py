@@ -1,5 +1,8 @@
+import os
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 '''
 calculate the threshold of x or y sobel given certain thesh and kernel sizes
@@ -78,42 +81,42 @@ combine the thresholding functions
 '''
 def combo_thresh(img):
   x_thresholded = abs_sobel_thresh(img, orient='x', sobel_kernel=3, thresh=(10, 120))
-  # plt.imshow(x_thresholded, cmap='gray')
-  # plt.title('xthresh')
-  # plt.show()
+  plt.imshow(x_thresholded, cmap='gray')
+  plt.title('xthresh')
+  plt.show()
 
   y_thresholded = abs_sobel_thresh(img, orient='y', sobel_kernel=3, thresh=(15, 100))
-  # plt.imshow(y_thresholded, cmap='gray')
-  # plt.title('ythresh')
-  # plt.show()
+  plt.imshow(y_thresholded, cmap='gray')
+  plt.title('ythresh')
+  plt.show()
 
   binary_output = np.zeros_like(x_thresholded)
   # using bitwise or + and, look up how working
   binary_output[((x_thresholded == 1) & (y_thresholded == 1))] = 1
-  # plt.imshow(binary_output, cmap='gray')
-  # plt.title('x and y')
-  # plt.show()
+  plt.imshow(binary_output, cmap='gray')
+  plt.title('x and y')
+  plt.show()
 
   hls_thresholded = hls_thresh(img, thresh=(90, 255))
-  # plt.imshow(hls_thresholded, cmap='gray')
-  # plt.title('hls')
-  # plt.show()
+  plt.imshow(hls_thresholded, cmap='gray')
+  plt.title('hls')
+  plt.show()
   
   mag_thresholded = mag_thresh(img, sobel_kernel=3, mag_thresh=(20, 160))
-  # plt.imshow(mag_thresholded, cmap='gray')
-  # plt.title('magnitude')
-  # plt.show()
+  plt.imshow(mag_thresholded, cmap='gray')
+  plt.title('magnitude')
+  plt.show()
 
   dir_thresholded = dir_thresh(img, sobel_kernel=15, thresh=(.7, 1.2))  
-  # plt.imshow(dir_thresholded, cmap='gray')  
-  # plt.title('directional')
-  # plt.show()
+  plt.imshow(dir_thresholded, cmap='gray')  
+  plt.title('directional')
+  plt.show()
 
   binary_output = np.zeros_like(dir_thresholded)
   binary_output[((dir_thresholded == 1) & (mag_thresholded == 1) & (hls_thresholded == 1))] = 1
-  # plt.imshow(binary_output, cmap='gray')
-  # plt.title('dir and mag')
-  # plt.show()
+  plt.imshow(binary_output, cmap='gray')
+  plt.title('dir and mag and hls')
+  plt.show()
 
 
   binary_output = np.zeros_like(dir_thresholded)
@@ -121,7 +124,27 @@ def combo_thresh(img):
   # 
   return binary_output
 
+def show_images(directory):
+  file_list = os.listdir(directory)
 
+  fig = plt.figure()
+  
+  for img_num in range(1, len(file_list)):
+    img_name = file_list[img_num]
+    if not img_name.startswith('.'):
+      print('img name is', img_name)
+      image = mpimg.imread(directory + '/' + img_name)
+      fig.add_subplot(3, 3, img_num)
+      plt.title(img_name)
+      plt.imshow(image)
 
-# if __name__ == '__main__':
+  plt.show()
+
+if __name__ == '__main__':
+  show_images('test_images')
+  image = mpimg.imread('test_images/test1.jpg')
+  binary_output = combo_thresh(image)
+  plt.imshow(binary_output, cmap='gray')
+  plt.title('binary thresh')
+  plt.show()
 #   print('hello world')
