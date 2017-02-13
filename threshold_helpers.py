@@ -124,27 +124,49 @@ def combo_thresh(img):
   # 
   return binary_output
 
-def show_images(directory):
+def get_file_images(directory):
   file_list = os.listdir(directory)
+  first_image = mpimg.imread(directory + '/' + file_list[1])
+  result = np.array([first_image])
+  print('result shape', result.shape)
 
-  fig = plt.figure()
-  
-  for img_num in range(1, len(file_list)):
+  for img_num in range(2, len(file_list)):
     img_name = file_list[img_num]
     if not img_name.startswith('.'):
       print('img name is', img_name)
       image = mpimg.imread(directory + '/' + img_name)
-      fig.add_subplot(3, 3, img_num)
-      plt.title(img_name)
-      plt.imshow(image)
+      result = np.append(result, np.array([image]), axis=0)
+
+  print('final shape', result.shape)
+  return result
+
+
+
+def show_images(images):
+
+  fig = plt.figure()
+  
+  for num in range(1, len(images)):
+    image = images[num]
+    fig.add_subplot(3, 3, num)
+    plt.title(num)
+    plt.imshow(image)
 
   plt.show()
 
 if __name__ == '__main__':
-  show_images('test_images')
-  image = mpimg.imread('test_images/test1.jpg')
-  binary_output = combo_thresh(image)
-  plt.imshow(binary_output, cmap='gray')
-  plt.title('binary thresh')
-  plt.show()
+  images = get_file_images('test_images')
+  show_images(images)
+  # image = mpimg.imread('test_images/test1.jpg')
+  # binary_output = combo_thresh(image)
+  # plt.imshow(binary_output, cmap='gray')
+  # plt.title('binary thresh')
+  # plt.show()
 #   print('hello world')
+
+'''
+run all 6 images through one threshold function and then print them
+  store images in an array and print with show images function
+
+run all 6 images through the combo threshold function and print them
+'''
