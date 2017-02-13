@@ -85,38 +85,38 @@ combine the thresholding functions
 def combo_thresh(img):
 
   y_thresholded = abs_sobel_thresh(img, orient='y', sobel_kernel=7, thresh=(20, 100))
-  plt.imshow(y_thresholded, cmap='gray')
-  plt.title('ythresh')
-  plt.show()
+  # plt.imshow(y_thresholded, cmap='gray')
+  # plt.title('ythresh')
+  # plt.show()
 
   x_thresholded = abs_sobel_thresh(img, orient='x', sobel_kernel=7, thresh=(10, 120))
-  plt.imshow(x_thresholded, cmap='gray')
-  plt.title('xthresh')
-  plt.show()
+  # plt.imshow(x_thresholded, cmap='gray')
+  # plt.title('xthresh')
+  # plt.show()
 
   # was 90
   hls_thresholded = hls_thresh(img, thresh=(80, 255))
-  plt.imshow(hls_thresholded, cmap='gray')
-  plt.title('hls')
-  plt.show()
+  # plt.imshow(hls_thresholded, cmap='gray')
+  # plt.title('hls')
+  # plt.show()
 
   dir_thresholded = dir_thresh(img, sobel_kernel=15, thresh=(.7, 1.2))  
-  plt.imshow(dir_thresholded, cmap='gray')  
-  plt.title('directional')
-  plt.show()
+  # plt.imshow(dir_thresholded, cmap='gray')  
+  # plt.title('directional')
+  # plt.show()
   
 
   mag_thresholded = mag_thresh(img, sobel_kernel=3, mag_thresh=(30, 100))
-  plt.imshow(mag_thresholded, cmap='gray')
-  plt.title('magnitude')
-  plt.show()
+  # plt.imshow(mag_thresholded, cmap='gray')
+  # plt.title('magnitude')
+  # plt.show()
   
 
   first_combo = np.zeros_like(dir_thresholded)
   # using bitwise or + and, look up how working
-  first_combo[((dir_thresholded == 1) & (hls_thresholded == 1))] = 1
+  first_combo[(((dir_thresholded == 1) | (mag_thresholded == 1)) & (hls_thresholded == 1))] = 1
   plt.imshow(first_combo, cmap='gray')
-  plt.title('dir and hls')
+  plt.title('(dir or mag) and hls')
   plt.show()
 
 
@@ -135,7 +135,7 @@ def combo_thresh(img):
 
 
   binary_output = np.zeros_like(dir_thresholded)
-  binary_output[((dir_thresholded == 1) & (hls_thresholded == 1)) | ((x_thresholded == 1) & (mag_thresholded == 1))] = 1
+  binary_output[(((dir_thresholded == 1) | (mag_thresholded == 1) ) & (hls_thresholded == 1)) | ((x_thresholded == 1) & (y_thresholded == 1))] = 1
   # 
   return binary_output
 
@@ -195,15 +195,17 @@ if __name__ == '__main__':
   dist = dist_pickle['dist']
 
 
-  images = get_file_images('test_images')
-  show_images(images)
+  # images = get_file_images('test_images')
+  # show_images(images)
 
-  thresholded_images = threshold_all('test_images', combo_thresh)
-  show_images(thresholded_images)
+  # thresholded_images = threshold_all('test_images', combo_thresh)
+  # show_images(thresholded_images)
 
 
-  # image = mpimg.imread('test_images/test5.jpg')
-  # binary_output = combo_thresh(undist_img)
-  # plt.imshow(binary_output, cmap='gray')
-  # plt.title('binary thresh')
-  # plt.show()
+  image = mpimg.imread('test_images/test5.jpg')
+  undist_img = undist(image, mtx, dist)
+
+  binary_output = combo_thresh(undist_img)
+  plt.imshow(binary_output, cmap='gray')
+  plt.title('binary thresh')
+  plt.show()
