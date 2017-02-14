@@ -95,7 +95,7 @@ def combo_thresh(img):
   # plt.show()
 
   # was 90
-  hls_thresholded = hls_thresh(img, thresh=(80, 255))
+  hls_thresholded = hls_thresh(img, thresh=(95, 255))
   # plt.imshow(hls_thresholded, cmap='gray')
   # plt.title('hls')
   # plt.show()
@@ -112,12 +112,12 @@ def combo_thresh(img):
   # plt.show()
   
 
-  first_combo = np.zeros_like(dir_thresholded)
+  # first_combo = np.zeros_like(dir_thresholded)
   # using bitwise or + and, look up how working
-  first_combo[(((dir_thresholded == 1) | (mag_thresholded == 1)) & (hls_thresholded == 1))] = 1
-  plt.imshow(first_combo, cmap='gray')
-  plt.title('(dir or mag) and hls')
-  plt.show()
+  # first_combo[(((dir_thresholded == 1) | (mag_thresholded == 1)) & (hls_thresholded == 1))] = 1
+  # plt.imshow(first_combo, cmap='gray')
+  # plt.title('(dir or mag) and hls')
+  # plt.show()
 
 
   # second_combo = np.zeros_like(x_thresholded)
@@ -139,25 +139,29 @@ def combo_thresh(img):
   # 
   return binary_output
 
+'''
+given a directory, return an array of all images in it
+'''
 def get_file_images(directory):
   file_list = os.listdir(directory)
   first_image = mpimg.imread(directory + '/' + file_list[1])
-  result = np.array([first_image])
-  print('result shape', result.shape)
+  all_images = np.array([first_image])
+  # print('all_images shape', all_images.shape)
 
   for img_num in range(2, len(file_list)):
     img_name = file_list[img_num]
     if not img_name.startswith('.'):
-      print('img name is', img_name)
+      # print('img name is', img_name)
       image = mpimg.imread(directory + '/' + img_name)
-      undist_img = undist(image, mtx, dist)
-      result = np.append(result, np.array([undist_img]), axis=0)
+      # undist_img = undist(image, mtx, dist)
+      all_images = np.append(all_images, np.array([image]), axis=0)
 
-  print('final shape', result.shape)
-  return result
+  # print('final shape', all_images.shape)
+  return all_images
 
-
-
+'''
+for each image in array, print
+'''
 def show_images(images):
   fig = plt.figure()
   for num in range(1, len(images)):
@@ -168,6 +172,9 @@ def show_images(images):
 
   plt.show()
 
+'''
+run thresholding function on each image so that can see how it works on all
+'''
 def threshold_all(directory, func):
   file_list = os.listdir(directory)
   first_image = mpimg.imread(directory + '/' + file_list[1])
@@ -177,7 +184,6 @@ def threshold_all(directory, func):
   for img_num in range(0, len(file_list)):
     img_name = file_list[img_num]
     if not img_name.startswith('.'):
-      print('img name is', img_name)
       image = mpimg.imread(directory + '/' + img_name)
       thresholded_image = func(image)
       result = np.append(result, np.array([thresholded_image]), axis=0)

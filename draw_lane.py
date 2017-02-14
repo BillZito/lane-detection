@@ -54,18 +54,116 @@ def change_perspective(img):
   # sci.imsave('./output_images/warped_5.jpg', warped)
   return warped
 
-'''
-get the pixels using the lecture code
-'''
 def lr_curvature(binary_warped):
-  midpoint = int(binary_warped.shape[0]/2)
-  # print('midpoint', midpoint)
-  histogram = np.sum(binary_warped[midpoint :, :], axis=0)
+  # Assuming you have created a warped binary image called "binary_warped"
+  # Take a histogram of the bottom half of the image
+  histogram = np.sum(binary_warped[binary_warped.shape[0]/2:,:], axis=0)
+  # Create an output image to draw on and  visualize the result
   out_img = np.dstack((binary_warped, binary_warped, binary_warped))*255
+  # Find the peak of the left and right halves of the histogram
+  # These will be the starting point for the left and right lines
 
   # plt.plot(histogram)
   # plt.title('histo')
   # plt.show()
+
+  # plt.imshow(out_img)
+  # plt.title('before windows')
+  # plt.show()
+
+  midpoint = np.int(histogram.shape[0]/2)
+  leftx_base = np.argmax(histogram[:midpoint])
+  rightx_base = np.argmax(histogram[midpoint:]) + midpoint
+
+  # Choose the number of sliding windows
+  nwindows = 9
+  # Set height of windows
+  window_height = np.int(binary_warped.shape[0]/nwindows)
+  # Identify the x and y positions of all nonzero pixels in the image
+  nonzero = binary_warped.nonzero()
+  nonzeroy = np.array(nonzero[0])
+  nonzerox = np.array(nonzero[1])
+  # Current positions to be updated for each window
+  leftx_current = leftx_base
+  rightx_current = rightx_base
+  # Set the width of the windows +/- margin
+  margin = 100
+  # Set minimum number of pixels found to recenter window
+  minpix = 50
+  # Create empty lists to receive left and right lane pixel indices
+  left_lane_inds = []
+  right_lane_inds = []
+
+  # Step through the windows one by one
+  for window in range(nwindows):
+      # Identify window boundaries in x and y (and right and left)
+      win_y_low = binary_warped.shape[0] - (window+1)*window_height
+      win_y_high = binary_warped.shape[0] - window*window_height
+      win_xleft_low = leftx_current - margin
+      win_xleft_high = leftx_current + margin
+      win_xright_low = rightx_current - margin
+      win_xright_high = rightx_current + margin
+      # Draw the windows on the visualization image
+      cv2.rectangle(out_img,(win_xleft_low,win_y_low),(win_xleft_high,win_y_high),(0,140,0), 2)
+      # print('rectangle 1', (win_xleft_low,win_y_low),(win_xleft_high,win_y_high)) 
+      cv2.rectangle(out_img,(win_xright_low,win_y_low),(win_xright_high,win_y_high),(0,140,0), 2) 
+      # print('rectangle 2', (win_xright_low,win_y_low), (win_xright_high,win_y_high))
+      # Identify the nonzero pixels in x and y within the window
+      good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
+      good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
+      # Append these indices to the lists
+      left_lane_inds.append(good_left_inds)
+      right_lane_inds.append(good_right_inds)
+      # If you found > minpix pixels, recenter next window on their mean position
+      if len(good_left_inds) > minpix:
+          leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
+      if len(good_right_inds) > minpix:        
+          rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
+
+  # Concatenate the arrays of indices
+  left_lane_inds = np.concatenate(left_lane_inds)
+  right_lane_inds = np.concatenate(right_lane_inds)
+  print('left lane inds', left_lane_inds.shape, left_lane_inds[0], left_lane_inds[1])
+  print('right lane inds', right_lane_inds.shape)
+
+  # Extract left and right line pixel positions
+  leftx = nonzerox[left_lane_inds]
+  lefty = nonzeroy[left_lane_inds] 
+  rightx = nonzerox[right_lane_inds]
+  righty = nonzeroy[right_lane_inds] 
+
+  # Fit a second order polynomial to each
+  left_fit = np.polyfit(lefty, leftx, 2)
+  right_fit = np.polyfit(righty, rightx, 2)
+  # At this point, you're done! But here is how you can visualize the result as well:
+  # Generate x and y values for plotting
+  ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0] )
+  left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+  right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+
+  out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [30, 0, 0]
+  out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 30]
+  plt.imshow(out_img)
+  plt.plot(left_fitx, ploty, color='yellow')
+  plt.plot(right_fitx, ploty, color='yellow')
+  plt.xlim(0, 1280)
+  plt.ylim(720, 0)
+  plt.show()
+  return out_img
+
+
+'''
+get the pixels using the lecture code
+'''
+def lr_curvature2(binary_warped):
+  # print('midpoint', midpoint)
+  histogram = np.sum(binary_warped[binary_warped.shape[0]/2:,:], axis=0)
+  out_img = np.dstack((binary_warped, binary_warped, binary_warped))*255
+  midpoint = np.int(binary_warped.shape[0]/2)
+
+  plt.plot(histogram)
+  plt.title('histo')
+  plt.show()
 
   plt.imshow(out_img)
   plt.title('before windows')
@@ -147,16 +245,17 @@ def lr_curvature(binary_warped):
 
   #plot and visualize
   ploty = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
-  left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
-  right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+  # left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+  # right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+  # print('left fitx', left_fitx, 'right fitx', right_fitx)
 
   out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
   out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
   plt.title('after windows')
   plt.imshow(out_img)
   # plt.show()
-  plt.plot(left_fitx, ploty, color='yellow')
-  plt.plot(right_fitx, ploty, color='yellow')
+  # plt.plot(left_fitx, ploty, color='yellow')
+  # plt.plot(right_fitx, ploty, color='yellow')
   plt.xlim(0, 1280)
   plt.ylim(720, 0)
   # plt.imshow(out_img)
@@ -385,28 +484,30 @@ Run all steps of processing on an image.
 def process_image(img):
 
   undist_img = undist(img, mtx, dist)
-  plt.imshow(undist_img)
-  plt.title('undist_img')
-  plt.show()
+  # plt.imshow(undist_img)
+  # plt.title('undist_img')
+  # plt.show()
 
   combo_image = combo_thresh(undist_img)
-  plt.imshow(combo_image, cmap='gray')
-  plt.title('combo_image')
-  plt.show()
+  # plt.imshow(combo_image, cmap='gray')
+  # plt.title('combo_image')
+  # plt.show()
 
   warped_image = change_perspective(combo_image)
-  plt.imshow(warped_image, cmap='gray')
-  plt.title('warped_image')
-  plt.show()
+  # plt.imshow(warped_image, cmap='gray')
+  # plt.title('warped_image')
+  # plt.show()
+  
+  # # return warped_image
 
-  # lr_curvature(warped_image)
+  lr_curvature(warped_image)
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
-  left_vals, right_vals = get_lr(warped_image)
-  left_fitx, left_yvals, right_fitx, right_yvals, full_text = calc_curve(left_vals, right_vals)
-  result = draw_on_road(img, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
-  cv2.putText(result, full_text, (200, 100), cv2.FONT_HERSHEY_COMPLEX, 1, 255)
+  # left_vals, right_vals = get_lr(warped_image)
+  # left_fitx, left_yvals, right_fitx, right_yvals, full_text = calc_curve(left_vals, right_vals)
+  # result = draw_on_road(img, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
+  # cv2.putText(result, full_text, (200, 100), cv2.FONT_HERSHEY_COMPLEX, 1, 255)
   # sci.imsave('./output_images/final_6.jpg', result)
-  return result
+  # return result
 
 
 '''
@@ -438,6 +539,8 @@ class Lane():
 
 
 if __name__ == '__main__':
+  # images = get_file_images('test_images')
+  # show_images(images)
   lane = Lane()
   # #set video variables
   # proj_output = 'output.mp4'
@@ -448,17 +551,20 @@ if __name__ == '__main__':
   # output_clip.write_videofile(proj_output, audio=False)
 
 
+  # thresh_images = threshold_all('test_images', process_image)
+  # show_images(thresh_images)
+
   # left = Line()
   # right = Line()
-  # image = mpimg.imread('test_images/straight_road_1x.jpg')
-  image = mpimg.imread('test_images/test1.jpg')
+  image = mpimg.imread('test_images/straight_road_1x.jpg')
+  # image = mpimg.imread('test_images/test5.jpg')
   # plt.imshow(image)
   # plt.title('norm image')
   # plt.show()
 
-  colored_image = process_image(image)
+  process_image(image)
 
-  plt.imshow(colored_image)
-  plt.title('colored_image')
-  plt.show()
+  # plt.imshow(colored_image, cmap='gray')
+  # plt.title('colored_image')
+  # plt.show()
 
