@@ -25,20 +25,29 @@ warp the perspective based on 4 points
 def change_perspective(img):
   img_size = (img.shape[1], img.shape[0])
 
+  bot_width = .76
+  mid_width = .08
+  height_pct = .62
+  bottom_trim = .935
+  offset = img_size[0]*.25
+
+  src = np.float32([[img.shape[1]*(.5 - mid_width/2), img.shape[0]*height_pct], [img.shape[1]*(.5 + mid_width/2), img.shape[0]*height_pct],\
+   [img.shape[1]*(.5 + bot_width/2), img.shape[0]*bottom_trim], [img.shape[1]*(.5 - bot_width/2), img.shape[0]*bottom_trim]])
+  dst = np.float32([[offset, 0], [img_size[0] - offset, 0], [img_size[0] - offset, img_size[1]], [offset, img_size[1]]])
   # set fixed transforms based on image size
-  src = np.float32(
-    [[(img_size[0] / 2) - 31, img_size[1] / 2 + 82],
-    [((img_size[0] / 6) + 37), img_size[1]],
-    [(img_size[0] * 5 / 6) + 100, img_size[1]],
-    [(img_size[0] / 2 + 30), img_size[1] / 2 + 82]])
+  # src = np.float32(
+  #   [[(img_size[0] / 2) - 31, img_size[1] / 2 + 82],
+  #   [((img_size[0] / 6) + 37), img_size[1]],
+  #   [(img_size[0] * 5 / 6) + 100, img_size[1]],
+  #   [(img_size[0] / 2 + 50), img_size[1] / 2 + 82]])
   # print('src is 1:', (img_size[0] / 2) - 33, img_size[1] / 2 + 82, '2:', (img_size[0] / 6) + 37, img_size[1], \
     # '3:', (img_size[0] * 5 / 6) + 118, img_size[1], '4:', (img_size[0] / 2 + 33), img_size[1] / 2 + 82)
 
-  dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
+  # dst = np.float32(
+  #   [[(img_size[0] / 4), 0],
+  #   [(img_size[0] / 4), img_size[1]],
+  #   [(img_size[0] * 3 / 4), img_size[1]],
+  #   [(img_size[0] * 3 / 4), 0]])
 
   # used to test that src points matched line
   # cv2.fillConvexPoly(img, src.astype('int32'), 1)
@@ -57,7 +66,7 @@ def change_perspective(img):
 def lr_curvature(binary_warped):
   # Assuming you have created a warped binary image called "binary_warped"
   # Take a histogram of the bottom half of the image
-  histogram = np.sum(binary_warped[binary_warped.shape[0]/2:,:], axis=0)
+  histogram = np.sum(binary_warped[600:,:], axis=0)
   # Create an output image to draw on and  visualize the result
   out_img = np.dstack((binary_warped, binary_warped, binary_warped))*255
   # Find the peak of the left and right halves of the histogram
@@ -422,10 +431,10 @@ def process_image(img):
   # plt.title('warped_image')
   # plt.show()
   
-  return warped_image
+  # return warped_image
 
-  # drawn_image = lr_curvature(warped_image)
-  # return drawn_image
+  drawn_image = lr_curvature(warped_image)
+  return drawn_image
 
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
   # left_vals, right_vals = get_lr(warped_image)
