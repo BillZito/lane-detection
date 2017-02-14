@@ -63,9 +63,9 @@ def lr_curvature(binary_warped):
   # Find the peak of the left and right halves of the histogram
   # These will be the starting point for the left and right lines
 
-  # plt.plot(histogram)
-  # plt.title('histo')
-  # plt.show()
+  plt.plot(histogram)
+  plt.title('histo')
+  plt.show()
 
   # plt.imshow(out_img)
   # plt.title('before windows')
@@ -151,115 +151,32 @@ def lr_curvature(binary_warped):
   plt.show()
   return out_img
 
-
 '''
-get the pixels using the lecture code
+perform a mask given certain indices
 '''
-def lr_curvature2(binary_warped):
-  # print('midpoint', midpoint)
-  histogram = np.sum(binary_warped[binary_warped.shape[0]/2:,:], axis=0)
-  out_img = np.dstack((binary_warped, binary_warped, binary_warped))*255
-  midpoint = np.int(binary_warped.shape[0]/2)
-
-  plt.plot(histogram)
-  plt.title('histo')
-  plt.show()
-
-  plt.imshow(out_img)
-  plt.title('before windows')
-  plt.show()
-
-  leftx_base = np.argmax(histogram[:midpoint])
-  rightx_base = np.argmax(histogram[midpoint:]) + midpoint
-  # print('leftxbase', leftx_base, 'rightxbase', rightx_base)
-
-  # 2. crate sliding windows
-  nwindows = 9
-  #set sliding window height
-  window_height = np.int(binary_warped.shape[0]/nwindows)
-  nonzero = binary_warped.nonzero()
-  nonzeroy = np.array(nonzero[0])
-  nonzerox = np.array(nonzero[1])
-  # print('nonzeroy', nonzeroy.shape, 'nonzerox', nonzerox.shape)
-
-  leftx_current = leftx_base
-  rightx_current = rightx_base
-
-  #width of sliding windows
-  margin = 100
-  #min number of pixels found to recenter
-  minpix = 50
-
-  left_lane_inds = []
-  right_lane_inds = []
-
-  #step through the windows
-  for window in range(nwindows):
-    #identify window boundaries in x and y (and right and left)
-    #starts at 0-- height is 1/9th image
-    win_y_low = binary_warped.shape[0] - (window + 1) * window_height
-    #starts at 0 --- high is top of image 
-    win_y_high = binary_warped.shape[0] - window * window_height 
-    #left starts from -margin to + margin, same with right
-    win_xleft_low = leftx_current - margin
-    win_xleft_high = leftx_current + margin
-    win_xright_low = rightx_current - margin
-    win_xright_high = rightx_current + margin
-    # print('all vals', win_xleft_high, win_xleft_low, win_xright_low, win_xright_high)
+def region_of_interest(img, vertices):
+    """
+    Applies an image mask.
     
-    #draw the windows on the image
-    cv2.rectangle(out_img, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high), (0, 255, 0), 2)
-    cv2.rectangle(out_img, (win_xright_low, win_y_low), (win_xright_high, win_y_high), (0, 255, 0), 2)
-    # cv2.rectangle(out_img,(win_xleft_low,win_y_low),(win_xleft_high,win_y_high),(0,255,0), 2) 
-    # cv2.rectangle(out_img,(win_xright_low,win_y_low),(win_xright_high,win_y_high),(0,255,0), 2) 
-
-    #identify nozero pixels within the window
-    #nonzero is numpy function that returns non zero vals
-    good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
-    good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
-
-    #append these indices
-    left_lane_inds.append(good_left_inds)
-    right_lane_inds.append(good_right_inds)
-
-    #only recent if there are at least 50 dots (and therefore trustowrthy sample)
-    if len(good_left_inds) > minpix:
-      leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
-    if len(good_right_inds) > minpix: 
-      rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
-
-  #concat arrays of indices
-  left_lane_inds = np.concatenate(left_lane_inds)
-  right_lane_inds = np.concatenate(right_lane_inds)
-
-  #extract left and right line pixel positions
-  #getting all of the individal nonzero values from the lane_inds arrays?
-  leftx = nonzerox[left_lane_inds]
-  lefty = nonzeroy[left_lane_inds]
-  rightx = nonzerox[right_lane_inds]
-  righty = nonzeroy[right_lane_inds]
-
-  #set up polyfit for left and right
-  left_fit = np.polyfit(lefty, leftx, 2)
-  right_fit = np.polyfit(righty, rightx, 2)
-
-  #plot and visualize
-  ploty = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
-  # left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
-  # right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
-  # print('left fitx', left_fitx, 'right fitx', right_fitx)
-
-  out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
-  out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
-  plt.title('after windows')
-  plt.imshow(out_img)
-  # plt.show()
-  # plt.plot(left_fitx, ploty, color='yellow')
-  # plt.plot(right_fitx, ploty, color='yellow')
-  plt.xlim(0, 1280)
-  plt.ylim(720, 0)
-  # plt.imshow(out_img)
-  plt.show()
+    Only keeps the region of the image defined by the polygon
+    formed from `vertices`. The rest of the image is set to black.
+    """
+    #defining a blank mask to start with
+    mask = np.zeros_like(img)   
+    
+    #defining a 3 channel or 1 channel color to fill the mask with depending on the input image
+    if len(img.shape) > 2:
+        channel_count = img.shape[2]  # i.e. 3 or 4 depending on your image
+        ignore_mask_color = (255,) * channel_count
+    else:
+        ignore_mask_color = 255
+        
+    #filling pixels inside the polygon defined by "vertices" with the fill color    
+    cv2.fillPoly(mask, vertices, ignore_mask_color)
+    
+    #returning the image only where mask pixels are nonzero
+    masked_image = cv2.bitwise_and(img, mask)
+    return masked_image
 
 '''
 get the pixels for the left and right lanes and return them
@@ -487,20 +404,29 @@ def process_image(img):
   # plt.imshow(undist_img)
   # plt.title('undist_img')
   # plt.show()
+  trapezoid = np.array([[570, 420], [160, 720], [1200, 720], [700, 420]], np.int32);
+  masked_image = region_of_interest(undist_img, [trapezoid])
+  # plt.imshow(masked_image, cmap='gray')
+  # plt.title('masked_image')
+  # plt.show()
+  # return masked_image
 
-  combo_image = combo_thresh(undist_img)
+  combo_image = combo_thresh(masked_image)
   # plt.imshow(combo_image, cmap='gray')
   # plt.title('combo_image')
   # plt.show()
+  # return combo_image
 
   warped_image = change_perspective(combo_image)
   # plt.imshow(warped_image, cmap='gray')
   # plt.title('warped_image')
   # plt.show()
   
-  # # return warped_image
+  # return warped_image
 
-  lr_curvature(warped_image)
+  drawn_image = lr_curvature(warped_image)
+  return drawn_image
+
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
   # left_vals, right_vals = get_lr(warped_image)
   # left_fitx, left_yvals, right_fitx, right_yvals, full_text = calc_curve(left_vals, right_vals)
@@ -551,18 +477,18 @@ if __name__ == '__main__':
   # output_clip.write_videofile(proj_output, audio=False)
 
 
-  # thresh_images = threshold_all('test_images', process_image)
-  # show_images(thresh_images)
+  thresh_images = threshold_all('test_images', process_image)
+  show_images(thresh_images)
 
   # left = Line()
   # right = Line()
-  image = mpimg.imread('test_images/straight_road_1x.jpg')
-  # image = mpimg.imread('test_images/test5.jpg')
+  # image = mpimg.imread('test_images/straight_road_1x.jpg')
+  # image = mpimg.imread('test_images/test2.jpg')
   # plt.imshow(image)
   # plt.title('norm image')
   # plt.show()
 
-  process_image(image)
+  # colored_image = process_image(image)
 
   # plt.imshow(colored_image, cmap='gray')
   # plt.title('colored_image')

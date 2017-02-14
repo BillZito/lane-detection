@@ -208,7 +208,7 @@ if __name__ == '__main__':
   # show_images(thresholded_images)
 
 
-  image = mpimg.imread('test_images/test5.jpg')
+  image = mpimg.imread('test_images/test2.jpg')
   undist_img = undist(image, mtx, dist)
 
   binary_output = combo_thresh(undist_img)
