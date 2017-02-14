@@ -123,8 +123,8 @@ def lr_curvature(binary_warped):
   # Concatenate the arrays of indices
   left_lane_inds = np.concatenate(left_lane_inds)
   right_lane_inds = np.concatenate(right_lane_inds)
-  print('left lane inds', left_lane_inds.shape, left_lane_inds[0], left_lane_inds[1])
-  print('right lane inds', right_lane_inds.shape)
+  # print('left lane inds', left_lane_inds.shape, left_lane_inds[0], left_lane_inds[1])
+  # print('right lane inds', right_lane_inds.shape)
 
   # Extract left and right line pixel positions
   leftx = nonzerox[left_lane_inds]
@@ -404,14 +404,14 @@ def process_image(img):
   # plt.imshow(undist_img)
   # plt.title('undist_img')
   # plt.show()
-  trapezoid = np.array([[570, 420], [160, 720], [1200, 720], [700, 420]], np.int32);
-  masked_image = region_of_interest(undist_img, [trapezoid])
+  # trapezoid = np.array([[570, 420], [160, 720], [1200, 720], [700, 420]], np.int32);
+  # masked_image = region_of_interest(undist_img, [trapezoid])
   # plt.imshow(masked_image, cmap='gray')
   # plt.title('masked_image')
   # plt.show()
   # return masked_image
 
-  combo_image = combo_thresh(masked_image)
+  combo_image = combo_thresh(undist_img)
   # plt.imshow(combo_image, cmap='gray')
   # plt.title('combo_image')
   # plt.show()
@@ -422,10 +422,10 @@ def process_image(img):
   # plt.title('warped_image')
   # plt.show()
   
-  # return warped_image
+  return warped_image
 
-  drawn_image = lr_curvature(warped_image)
-  return drawn_image
+  # drawn_image = lr_curvature(warped_image)
+  # return drawn_image
 
   # print('warped shape[0]/2', int(warped_image.shape[0]/2))
   # left_vals, right_vals = get_lr(warped_image)

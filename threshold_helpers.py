@@ -80,25 +80,40 @@ def hls_thresh(img, thresh=(0, 255)):
   return binary_output
 
 '''
+get v channel from hsv
+'''
+def hsv_thresh(img, thresh=(0, 255)):
+  hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+
+  v_channel = hsv[:, :, 2]
+
+  binary_output = np.zeros_like(v_channel)
+  binary_output[(v_channel > thresh[0]) & (v_channel <= thresh[1])] = 1
+
+  return binary_output
+
+'''
 combine the thresholding functions
 '''
 def combo_thresh(img):
 
-  y_thresholded = abs_sobel_thresh(img, orient='y', sobel_kernel=7, thresh=(20, 100))
-  # plt.imshow(y_thresholded, cmap='gray')
-  # plt.title('ythresh')
-  # plt.show()
 
-  x_thresholded = abs_sobel_thresh(img, orient='x', sobel_kernel=7, thresh=(10, 120))
+  x_thresholded = abs_sobel_thresh(img, orient='x', sobel_kernel=3, thresh=(12, 120))
   # plt.imshow(x_thresholded, cmap='gray')
   # plt.title('xthresh')
   # plt.show()
 
+  y_thresholded = abs_sobel_thresh(img, orient='y', sobel_kernel=3, thresh=(25, 100))
+  # plt.imshow(y_thresholded, cmap='gray')
+  # plt.title('ythresh')
+  # plt.show()
+
   # was 90
-  hls_thresholded = hls_thresh(img, thresh=(95, 255))
+  hls_thresholded = hls_thresh(img, thresh=(100, 255))
   # plt.imshow(hls_thresholded, cmap='gray')
   # plt.title('hls')
   # plt.show()
+  hsv_thresholded = hsv_thresh(img, thresh=(50, 255))
 
   dir_thresholded = dir_thresh(img, sobel_kernel=15, thresh=(.7, 1.2))  
   # plt.imshow(dir_thresholded, cmap='gray')  
@@ -135,7 +150,9 @@ def combo_thresh(img):
 
 
   binary_output = np.zeros_like(dir_thresholded)
-  binary_output[(((dir_thresholded == 1) | (mag_thresholded == 1) ) & (hls_thresholded == 1)) | ((x_thresholded == 1) & (y_thresholded == 1))] = 1
+  binary_output[((hsv_thresholded == 1) & (hls_thresholded == 1)) | ((x_thresholded == 1) & (y_thresholded == 1))] = 1
+
+  # binary_output[(((dir_thresholded == 1) | (mag_thresholded == 1) ) & (hls_thresholded == 1)) | ((x_thresholded == 1) & (y_thresholded == 1))] = 1
   # 
   return binary_output
 
@@ -204,14 +221,14 @@ if __name__ == '__main__':
   # images = get_file_images('test_images')
   # show_images(images)
 
-  # thresholded_images = threshold_all('test_images', combo_thresh)
-  # show_images(thresholded_images)
+  thresholded_images = threshold_all('test_images', combo_thresh)
+  show_images(thresholded_images)
 
 
-  image = mpimg.imread('test_images/test2.jpg')
-  undist_img = undist(image, mtx, dist)
+  # image = mpimg.imread('test_images/test2.jpg')
+  # undist_img = undist(image, mtx, dist)
 
-  binary_output = combo_thresh(undist_img)
-  plt.imshow(binary_output, cmap='gray')
-  plt.title('binary thresh')
-  plt.show()
+  # binary_output = combo_thresh(undist_img)
+  # plt.imshow(binary_output, cmap='gray')
+  # plt.title('binary thresh')
+  # plt.show()
