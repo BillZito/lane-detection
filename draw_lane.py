@@ -72,9 +72,9 @@ def lr_curvature(binary_warped):
   # Find the peak of the left and right halves of the histogram
   # These will be the starting point for the left and right lines
 
-  plt.plot(histogram)
-  plt.title('histo')
-  plt.show()
+  # plt.plot(histogram)
+  # plt.title('histo')
+  # plt.show()
 
   # plt.imshow(out_img)
   # plt.title('before windows')
@@ -85,7 +85,7 @@ def lr_curvature(binary_warped):
   rightx_base = np.argmax(histogram[midpoint:]) + midpoint
 
   # Choose the number of sliding windows
-  nwindows = 9
+  nwindows = 50
   # Set height of windows
   window_height = np.int(binary_warped.shape[0]/nwindows)
   # Identify the x and y positions of all nonzero pixels in the image
@@ -96,7 +96,7 @@ def lr_curvature(binary_warped):
   leftx_current = leftx_base
   rightx_current = rightx_base
   # Set the width of the windows +/- margin
-  margin = 100
+  margin = 80
   # Set minimum number of pixels found to recenter window
   minpix = 50
   # Create empty lists to receive left and right lane pixel indices
@@ -140,6 +140,8 @@ def lr_curvature(binary_warped):
   lefty = nonzeroy[left_lane_inds] 
   rightx = nonzerox[right_lane_inds]
   righty = nonzeroy[right_lane_inds] 
+  print('lefty.shape', lefty.shape)
+  print('righty.shape', righty.shape)
 
   # Fit a second order polynomial to each
   left_fit = np.polyfit(lefty, leftx, 2)
@@ -149,6 +151,9 @@ def lr_curvature(binary_warped):
   ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0] )
   left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
   right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+  print('left_fitx.shape', left_fitx.shape)
+  print('right_fitx.shape', right_fitx.shape)
+  print('ploty shape', ploty.shape)
 
   out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [30, 0, 0]
   out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 30]
@@ -158,7 +163,47 @@ def lr_curvature(binary_warped):
   plt.xlim(0, 1280)
   plt.ylim(720, 0)
   plt.show()
-  return out_img
+  # return out_img
+
+  #convert from pixel space to meter space
+  ym_per_pix = 30/720
+  xm_per_pix = 3.7/700
+
+  left_fit_cr = np.polyfit(lefty*ym_per_pix, leftx*xm_per_pix, 2)
+  right_fit_cr = np.polyfit(righty*ym_per_pix, rightx*xm_per_pix, 2)
+
+  #calculate radisu of curvature
+  left_eval = np.max(lefty)
+  right_eval = np.max(righty)
+  left_curverad = ((1 + (2*left_fit_cr[0]*left_eval + left_fit_cr[1])**2)**1.5)/np.absolute(2*left_fit_cr[0])
+  right_curverad = ((1 + (2*right_fit_cr[0]*right_eval + right_fit_cr[1])**2)**1.5)/np.absolute(2*right_fit_cr[0])
+  
+  # plt.show()
+
+  print('left curverad', left_curverad)
+  print('rightcurverad', right_curverad)
+
+
+  # calculate left_min by finding minimum value in first index of array
+  left_min = np.amin(leftx, axis=0)
+  # print('left_min', left_min)
+  right_max = np.amax(rightx, axis=0)
+  # print('right max', right_max)
+  actual_center = (right_max + left_min)/2
+  dist_from_center =  actual_center - (1280/2)
+  print('pix dist from center', dist_from_center)
+
+  meters_from_center = xm_per_pix * dist_from_center
+  string_meters = str(round(meters_from_center, 2))
+  # right_string = str(round(right_max, 2))
+  # print('string meters', string_meters)
+  # ', right_max: ' + right_string 
+  # print('meters from center', meters_from_center)
+  full_text = 'left: ' + str(round(left_curverad, 2)) + ', right: ' + \
+    str(round(right_curverad, 2)) + ', dist from center: ' + string_meters 
+  print('full text', full_text)
+
+  return left_fitx, lefty, right_fitx, righty, ploty, full_text
 
 '''
 perform a mask given certain indices
@@ -348,14 +393,15 @@ def calc_curve(left_vals, right_vals):
 '''
 given left and right lines values, add to original image
 '''
-def draw_on_road(img, warped, left_fitx, left_yvals, right_fitx, right_yvals):
+def draw_on_road(img, warped, left_fitx, left_yvals, right_fitx, right_yvals, ploty):
   #create img to draw the lines on
   warp_zero = np.zeros_like(warped).astype(np.uint8)
   color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
 
   #recast x and y into usable format for cv2.fillPoly
-  pts_left = np.array([np.transpose(np.vstack([left_fitx, left_yvals]))])
-  pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, right_yvals])))])
+  print('left_fitx', left_fitx.shape, 'ploty', ploty.shape)
+  pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
+  pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
   # print('pts left', pts_left.shape, 'pts right', pts_right.shape)
   pts = np.hstack((pts_left, pts_right))
 
@@ -364,22 +410,31 @@ def draw_on_road(img, warped, left_fitx, left_yvals, right_fitx, right_yvals):
 
   img_size = (img.shape[1], img.shape[0])
 
-  dst = np.float32(
-    [[(img_size[0] / 2) - 33, img_size[1] / 2 + 82],
-    [((img_size[0] / 6) + 37), img_size[1]],
-    [(img_size[0] * 5 / 6) + 118, img_size[1]],
-    [(img_size[0] / 2 + 33), img_size[1] / 2 + 82]])
+  bot_width = .76
+  mid_width = .08
+  height_pct = .62
+  bottom_trim = .935
+  offset = img_size[0]*.25
+
+  dst = np.float32([[img.shape[1]*(.5 - mid_width/2), img.shape[0]*height_pct], [img.shape[1]*(.5 + mid_width/2), img.shape[0]*height_pct],\
+   [img.shape[1]*(.5 + bot_width/2), img.shape[0]*bottom_trim], [img.shape[1]*(.5 - bot_width/2), img.shape[0]*bottom_trim]])
+  src = np.float32([[offset, 0], [img_size[0] - offset, 0], [img_size[0] - offset, img_size[1]], [offset, img_size[1]]])
+  # dst = np.float32(
+  #   [[(img_size[0] / 2) - 33, img_size[1] / 2 + 82],
+  #   [((img_size[0] / 6) + 37), img_size[1]],
+  #   [(img_size[0] * 5 / 6) + 118, img_size[1]],
+  #   [(img_size[0] / 2 + 33), img_size[1] / 2 + 82]])
   # print('src is', src)
     # [[(img_size[0] / 2) - 36, img_size[1] / 2 + 90],
     # [((img_size[0] / 6) + 50), img_size[1]],
     # [(img_size[0] * 5 / 6) + 80, img_size[1]],
     # [(img_size[0] / 2 + 36), img_size[1] / 2 + 90]]
 
-  src = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
+  # src = np.float32(
+  #   [[(img_size[0] / 4), 0],
+  #   [(img_size[0] / 4), img_size[1]],
+  #   [(img_size[0] * 3 / 4), img_size[1]],
+  #   [(img_size[0] * 3 / 4), 0]])
   # print('dst is', dst)
 
   # cv2.fillConvexPoly(image, src, 1)
@@ -427,22 +482,21 @@ def process_image(img):
   # return combo_image
 
   warped_image = change_perspective(combo_image)
-  # plt.imshow(warped_image, cmap='gray')
-  # plt.title('warped_image')
-  # plt.show()
+  plt.imshow(warped_image, cmap='gray')
+  plt.title('warped_image')
+  plt.show()
   
   # return warped_image
 
-  drawn_image = lr_curvature(warped_image)
-  return drawn_image
+  left_fitx, left_yvals, right_fitx, right_yvals, ploty, full_text = lr_curvature(warped_image)
+  # return drawn_image
 
-  # print('warped shape[0]/2', int(warped_image.shape[0]/2))
   # left_vals, right_vals = get_lr(warped_image)
   # left_fitx, left_yvals, right_fitx, right_yvals, full_text = calc_curve(left_vals, right_vals)
-  # result = draw_on_road(img, warped_image, left_fitx, left_yvals, right_fitx, right_yvals)
-  # cv2.putText(result, full_text, (200, 100), cv2.FONT_HERSHEY_COMPLEX, 1, 255)
-  # sci.imsave('./output_images/final_6.jpg', result)
-  # return result
+  result = draw_on_road(img, warped_image, left_fitx, left_yvals, right_fitx, right_yvals, ploty)
+  cv2.putText(result, full_text, (200, 100), cv2.FONT_HERSHEY_COMPLEX, 1, 255)
+  # sci.imsave('./output_images/test_myguess.jpg', result)
+  return result
 
 
 '''
