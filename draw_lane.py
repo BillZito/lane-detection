@@ -140,8 +140,6 @@ def lr_curvature(binary_warped):
   lefty = nonzeroy[left_lane_inds] 
   rightx = nonzerox[right_lane_inds]
   righty = nonzeroy[right_lane_inds] 
-  print('lefty.shape', lefty.shape)
-  print('righty.shape', righty.shape)
 
   # Fit a second order polynomial to each
   left_fit = np.polyfit(lefty, leftx, 2)
@@ -151,18 +149,15 @@ def lr_curvature(binary_warped):
   ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0] )
   left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
   right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
-  print('left_fitx.shape', left_fitx.shape)
-  print('right_fitx.shape', right_fitx.shape)
-  print('ploty shape', ploty.shape)
 
   out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [30, 0, 0]
   out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 30]
-  plt.imshow(out_img)
-  plt.plot(left_fitx, ploty, color='yellow')
-  plt.plot(right_fitx, ploty, color='yellow')
-  plt.xlim(0, 1280)
-  plt.ylim(720, 0)
-  plt.show()
+  # plt.imshow(out_img)
+  # plt.plot(left_fitx, ploty, color='yellow')
+  # plt.plot(right_fitx, ploty, color='yellow')
+  # plt.xlim(0, 1280)
+  # plt.ylim(720, 0)
+  # plt.show()
   # return out_img
 
   #convert from pixel space to meter space
@@ -180,8 +175,8 @@ def lr_curvature(binary_warped):
   
   # plt.show()
 
-  print('left curverad', left_curverad)
-  print('rightcurverad', right_curverad)
+  # print('left curverad', left_curverad)
+  # print('rightcurverad', right_curverad)
 
 
   # calculate left_min by finding minimum value in first index of array
@@ -191,7 +186,7 @@ def lr_curvature(binary_warped):
   # print('right max', right_max)
   actual_center = (right_max + left_min)/2
   dist_from_center =  actual_center - (1280/2)
-  print('pix dist from center', dist_from_center)
+  # print('pix dist from center', dist_from_center)
 
   meters_from_center = xm_per_pix * dist_from_center
   string_meters = str(round(meters_from_center, 2))
@@ -201,7 +196,7 @@ def lr_curvature(binary_warped):
   # print('meters from center', meters_from_center)
   full_text = 'left: ' + str(round(left_curverad, 2)) + ', right: ' + \
     str(round(right_curverad, 2)) + ', dist from center: ' + string_meters 
-  print('full text', full_text)
+  # print('full text', full_text)
 
   return left_fitx, lefty, right_fitx, righty, ploty, full_text
 
@@ -399,7 +394,6 @@ def draw_on_road(img, warped, left_fitx, left_yvals, right_fitx, right_yvals, pl
   color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
 
   #recast x and y into usable format for cv2.fillPoly
-  print('left_fitx', left_fitx.shape, 'ploty', ploty.shape)
   pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
   pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
   # print('pts left', pts_left.shape, 'pts right', pts_right.shape)
@@ -482,9 +476,9 @@ def process_image(img):
   # return combo_image
 
   warped_image = change_perspective(combo_image)
-  plt.imshow(warped_image, cmap='gray')
-  plt.title('warped_image')
-  plt.show()
+  # plt.imshow(warped_image, cmap='gray')
+  # plt.title('warped_image')
+  # plt.show()
   
   # return warped_image
 
@@ -530,18 +524,18 @@ class Lane():
 if __name__ == '__main__':
   # images = get_file_images('test_images')
   # show_images(images)
-  lane = Lane()
+  # lane = Lane()
   # #set video variables
-  # proj_output = 'output.mp4'
-  # clip1 = VideoFileClip('project_video.mp4')
+  proj_output = 'output.mp4'
+  clip1 = VideoFileClip('project_video.mp4')
 
   # #run process image on each video clip and save to file
-  # output_clip = clip1.fl_image(process_image)
-  # output_clip.write_videofile(proj_output, audio=False)
+  output_clip = clip1.fl_image(process_image)
+  output_clip.write_videofile(proj_output, audio=False)
 
 
-  thresh_images = threshold_all('test_images', process_image)
-  show_images(thresh_images)
+  # thresh_images = threshold_all('test_images', process_image)
+  # show_images(thresh_images)
 
   # left = Line()
   # right = Line()
