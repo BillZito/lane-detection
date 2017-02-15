@@ -44,15 +44,16 @@ And after undistortion (notice how the edge of the top right bush changed):
 **threshold_helpers.py** contains the fucntions for applying binary thresholds detect the lane lines.
 
 1. abs_sobel_thresh(): calculates the threshold along either x (mostly vertical) or y (mostly horizontal) orients, given passed in thersholds (upper and lower bounds) and kernel values (which determines smoothness). The red color spectrum was found to give the best thresholds via guess and test.
-1. mag_thresh(): creates a magnitude threshold baed on the combined values of the sobel in x and y directions.
-1. dir_thresh(): sets a directional threshold for given bounds between 0 (horizontal) and pi/2 (vertical)
 1. hls_thresh(): uses the saturation channel of the hls color spectrum as a binary threshold.
+1. hsv_thresh(): uses the v channel of the hsv color sepecturm for binary thresholding.
+1. mag_thresh(): creates a magnitude threshold based on the combined values of the sobel in x and y directions. (not used)
+1. dir_thresh(): sets a directional threshold for given bounds between 0 (horizontal) and pi/2 (vertical). (not used)
 1. combo_thresh(): sets a pixel to 1 if it is found in either the x and y thresholds or if it is found in the magnitude, direction, and hls thresholds. 
 
-The parameters were tuned by viewing each of the 5 thresholds independently and combined and looking for which combinations maximized lane pixels while also minimizing noise. 
+The parameters were tuned by viewing each of the 6 thresholds independently and combined and looking for which combinations maximized lane pixels while also minimizing noise. Ultimately, a combination of (hls and hsv) or (x and y) provided the best results. I've visualized the image below.
 
 After all thresholds are applied:
-![alt tag](./output_images/combo_threshold_2.jpg)
+![alt tag](./output_images/combo_thresh_2_final.jpg)
 
 
 
@@ -66,7 +67,9 @@ The src points are based proportionally on the size of the image, and were deter
 
 After changing perspective, the left and right lines should appear parallel since they should curve the same amount at any point in the lane.
 
-![alt tag](./output_images/warped_5.jpg)
+Credit to the Udacity lecture on programmatically finding good points for the warp.
+
+![alt tag](./output_images/warped_5_final.jpg)
 
 
 
@@ -74,14 +77,13 @@ After changing perspective, the left and right lines should appear parallel sinc
 
 **draw_lane.py** contains the code for deteching l/r lane pixels.
 
-**get_lr():** takes the warped and thresholded image and extracts the locations of the pixels in it. Given a range for the left and right lanes, the peak values across rows are found, corresponding to where there is likely a lane. 
+**lr_curvature():** takes the warped and thresholded image and extracts the locations of the pixels in it. Given a range for the left and right lanes, the peak values across rows are found, corresponding to where there is likely a lane. 
 
 A range around this value is then extracted as being likely to correspond to the lane. 
 
+It takes the x and y coordinates of the pixels, fits a second order polynomial to them, and plots them. 
 
-**get_points():** is a helper function to get the x and y coordinates of each pixel
-
-**calc_curve():** takes the x and y coordinates of the pixels, fits a second order polynomial to them, and plots them. Then converts from pixel space to meter space and calculates the left and right curve radius.
+Finally, it converts from pixel space to meter space and calculates the left and right curve radius.
   
 **class Lane():** keeps track of the left and right values, curvatures, and text for the image. Several checks are applied on the data before accepting it is a new lane: the curves most be similar in magnitude, and the right lane must have enough pixels in the right region of the screen. Otherwise, the previous lane values are used. 
 

@@ -221,8 +221,8 @@ if __name__ == '__main__':
   # images = get_file_images('test_images')
   # show_images(images)
 
-  thresholded_images = threshold_all('test_images', combo_thresh)
-  show_images(thresholded_images)
+  # thresholded_images = threshold_all('test_images', combo_thresh)
+  # show_images(thresholded_images)
 
 
   # image = mpimg.imread('test_images/test2.jpg')
