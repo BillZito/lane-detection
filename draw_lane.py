@@ -198,6 +198,26 @@ def lr_curvature(binary_warped):
     str(round(right_curverad, 2)) + ', dist from center: ' + string_meters 
   # print('full text', full_text)
 
+  if abs(left_curverad - right_curverad) < 5000 \
+    and right_max < 1100 or not lane.curve['full_text']:
+    # dont remember what this does: and rightx.shape[0] > 100
+    # print('setting vals now')
+    lane.curve['left_fitx'] = left_fitx
+    lane.curve['lefty'] = lefty
+    lane.curve['right_fitx'] = right_fitx
+    lane.curve['righty'] = righty
+    lane.curve['ploty'] = ploty
+    lane.curve['full_text'] = full_text
+  else:
+    # print('getting previous vals')
+    left_fitx= lane.curve['left_fitx'] 
+    lefty = lane.curve['lefty'] 
+    right_fitx = lane.curve['right_fitx'] 
+    righty = lane.curve['righty']
+    ploty = lane.curve['ploty']
+    full_text = lane.curve['full_text']
+
+
   return left_fitx, lefty, right_fitx, righty, ploty, full_text
 
 '''
@@ -482,12 +502,12 @@ def process_image(img):
   
   # return warped_image
 
-  left_fitx, left_yvals, right_fitx, right_yvals, ploty, full_text = lr_curvature(warped_image)
+  left_fitx, lefty, right_fitx, righty, ploty, full_text = lr_curvature(warped_image)
   # return drawn_image
 
   # left_vals, right_vals = get_lr(warped_image)
-  # left_fitx, left_yvals, right_fitx, right_yvals, full_text = calc_curve(left_vals, right_vals)
-  result = draw_on_road(img, warped_image, left_fitx, left_yvals, right_fitx, right_yvals, ploty)
+  # left_fitx, lefty, right_fitx, righty, full_text = calc_curve(left_vals, right_vals)
+  result = draw_on_road(img, warped_image, left_fitx, lefty, right_fitx, righty, ploty)
   cv2.putText(result, full_text, (200, 100), cv2.FONT_HERSHEY_COMPLEX, 1, 255)
   # sci.imsave('./output_images/test_myguess.jpg', result)
   return result
@@ -524,7 +544,7 @@ class Lane():
 if __name__ == '__main__':
   # images = get_file_images('test_images')
   # show_images(images)
-  # lane = Lane()
+  lane = Lane()
   # #set video variables
   proj_output = 'output.mp4'
   clip1 = VideoFileClip('project_video.mp4')
