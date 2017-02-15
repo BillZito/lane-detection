@@ -77,19 +77,15 @@ Credit to the Udacity lecture on programmatically finding good points for the wa
 
 **draw_lane.py** contains the code for deteching l/r lane pixels.
 
-**lr_curvature():** takes the warped and thresholded image and extracts the locations of the pixels in it. Given a range for the left and right lanes, the peak values across rows are found, corresponding to where there is likely a lane. 
-
-A range around this value is then extracted as being likely to correspond to the lane. 
-
-It takes the x and y coordinates of the pixels, fits a second order polynomial to them, and plots them. 
+**lr_curvature():** takes the warped and thresholded image and extracts the locations of the pixels in it. Using sliding windows, the lane-related pixels are extracted and a second order polynomial fit to the left and right lanes. 
 
 Finally, it converts from pixel space to meter space and calculates the left and right curve radius.
   
 **class Lane():** keeps track of the left and right values, curvatures, and text for the image. Several checks are applied on the data before accepting it is a new lane: the curves most be similar in magnitude, and the right lane must have enough pixels in the right region of the screen. Otherwise, the previous lane values are used. 
 
-Example best fit lines:
+Example sliding windows, corresponding left(red) and right(blue) pixels, and best fit lines(yellow):
 
-![alt tag](./output_images/best_fit_lines.png)
+![alt tag](./output_images/bestfit_5_final.jpg)
 
 
 ###6. Warp detected lane back onto the original image
@@ -108,15 +104,17 @@ An example end-product:
 
 ---
 
-## Key Learnings
+## Discussion
 
 1. To determine the right thresholding, I experimented with gray color images and the red color channel since it can recognize both white and yellow lines. Messing with the parameters, I determined that the red color channel worked best, and that combing the hls_threshold with the dir and mag took out the shadow noise in the hls_threshold function.
 
 
-1. To determine the best spots for the conversion from image space to pixel space, I played around with different hard-coded corners for the lanes. This took  some fine-tuning, but after I got parallel lines in my perspective transform, warping the lane back worked well. From there, I only had to average the right lane occassionally to get it to work well. 
+1. To determine the best spots for the conversion from image space to pixel space, I first played around with different hard-coded corners for the lanes. Eventually, I used proportional locations in the image because they returned more parallel lines.
 
 
 1. After developing my convolutional neural network for maintaining lanes, I knew to visualize my images at each step of the process to avoid stupid mistakes. Given the large number of helper methods for this problem, I also had to make decisions about how to best modularize the code. I decided that the camera calibration functions could stand on their own, as could all of the thresholding functions, allowing the main draw_lane.py to call the necessary helpers in process_image.
+
+1. This model shows a few hiccups with shadows and line markings. I could improve it by averaging several past lane curvatures. Additionally, instead of sliding windows I could use convolutions to determine which pixels are part of the left and right lanes. Finally, this has not been tested with night-time or rainy condition videos, and those may blur the lines to the point where the current model would not work well.
 
 ---
 
