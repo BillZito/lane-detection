@@ -198,8 +198,8 @@ def lr_curvature(binary_warped):
     str(round(right_curverad, 2)) + ', dist from center: ' + string_meters 
   # print('full text', full_text)
 
-  if abs(left_curverad - right_curverad) < 5000 \
-    and right_max < 1100 or not lane.curve['full_text']:
+  if abs(left_curverad - right_curverad) < 5000 or not lane.curve['full_text']:
+    # try without: \and right_max < 1100
     # dont remember what this does: and rightx.shape[0] > 100
     # print('setting vals now')
     lane.curve['left_fitx'] = left_fitx
@@ -546,7 +546,7 @@ if __name__ == '__main__':
   # show_images(images)
   lane = Lane()
   # #set video variables
-  proj_output = 'output.mp4'
+  proj_output = 'output2.mp4'
   clip1 = VideoFileClip('project_video.mp4')
 
   # #run process image on each video clip and save to file
