@@ -48,7 +48,6 @@ def change_perspective(img):
 
   #transform the image to birds eye view given the transform matrix
   warped = cv2.warpPerspective(img, M, (img_size[0], img_size[1]))
-  # sci.imsave('./output_images/warped_5.jpg', warped)
   return warped
 
 '''
@@ -142,9 +141,9 @@ def lr_curvature(binary_warped):
 
   out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [30, 0, 0]
   out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 30]
-  plt.imshow(out_img)
-  plt.plot(left_fitx, ploty, color='yellow')
-  plt.plot(right_fitx, ploty, color='yellow')
+  # plt.imshow(out_img)
+  # plt.plot(left_fitx, ploty, color='yellow')
+  # plt.plot(right_fitx, ploty, color='yellow')
   plt.xlim(0, 1280)
   plt.ylim(720, 0)
   # plt.show()
@@ -161,8 +160,6 @@ def lr_curvature(binary_warped):
   right_eval = np.max(righty)
   left_curverad = ((1 + (2*left_fit_cr[0]*left_eval + left_fit_cr[1])**2)**1.5)/np.absolute(2*left_fit_cr[0])
   right_curverad = ((1 + (2*right_fit_cr[0]*right_eval + right_fit_cr[1])**2)**1.5)/np.absolute(2*right_fit_cr[0])
-  
-  # plt.show()
 
   # calculate left_min by finding minimum value in first index of array
   left_min = np.amin(leftx, axis=0)
@@ -175,10 +172,7 @@ def lr_curvature(binary_warped):
 
   meters_from_center = xm_per_pix * dist_from_center
   string_meters = str(round(meters_from_center, 2))
-  # right_string = str(round(right_max, 2))
-  # print('string meters', string_meters)
-  # ', right_max: ' + right_string 
-  # print('meters from center', meters_from_center)
+
   full_text = 'left: ' + str(round(left_curverad, 2)) + ', right: ' + \
     str(round(right_curverad, 2)) + ', dist from center: ' + string_meters 
   # print('full text', full_text)
@@ -291,32 +285,29 @@ def process_image(img):
   # plt.imshow(undist_img)
   # plt.title('undist_img')
   # plt.show()
+
+  # if want to perform mask, do it here
   # trapezoid = np.array([[570, 420], [160, 720], [1200, 720], [700, 420]], np.int32);
   # masked_image = region_of_interest(undist_img, [trapezoid])
   # plt.imshow(masked_image, cmap='gray')
   # plt.title('masked_image')
   # plt.show()
-  # return masked_image
 
   combo_image = combo_thresh(undist_img)
   # plt.imshow(combo_image, cmap='gray')
   # plt.title('combo_image')
   # plt.show()
-  # return combo_image
 
   warped_image = change_perspective(combo_image)
-  # sci.imsave('./output_images/warped_5_final.jpg', warped_image)
   # plt.imshow(warped_image, cmap='gray')
   # plt.title('warped_image')
   # plt.show()
   
-  # return warped_image
-  lr_curvature(warped_image)
-  # left_fitx, lefty, right_fitx, righty, ploty, full_text = lr_curvature(warped_image)
-  # return drawn_image
-
+  left_fitx, lefty, right_fitx, righty, ploty, full_text = lr_curvature(warped_image)
   result = draw_on_road(img, warped_image, left_fitx, lefty, right_fitx, righty, ploty)
   cv2.putText(result, full_text, (200, 100), cv2.FONT_HERSHEY_COMPLEX, 1, 255)
+
+  # sci.imsave('./output_images/5_final.jpg', result)
   return result
 
 
@@ -352,7 +343,7 @@ if __name__ == '__main__':
 
   colored_image = process_image(image)
 
-  # plt.imshow(colored_image, cmap='gray')
-  # plt.title('colored_image')
-  # plt.show()
+  plt.imshow(colored_image, cmap='gray')
+  plt.title('colored_image')
+  plt.show()
 

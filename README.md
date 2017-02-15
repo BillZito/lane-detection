@@ -1,6 +1,6 @@
 # Programmatic lane finding
 
-![alt tag](./output_images/drawn_lane_lines.jpg)
+![alt tag](./output_images/5_final.jpg)
 
 ---
 
@@ -100,7 +100,7 @@ The inverse perspective transform of the original birds eye transform is used to
 
 An example end-product: 
 
-![alt tag](./output_images/final_6.jpg)
+![alt tag](./output_images/5_final.jpg)
 
 ---
 
